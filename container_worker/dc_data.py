@@ -1,0 +1,139 @@
+import os
+import requests
+from os.path import expanduser
+from paramiko import SSHClient, AutoAddPolicy
+from uuid import uuid4
+
+from container_worker.helper import key_generator
+
+LOCAL_FILE_BASE_DIR = expanduser('~')
+
+
+class FileManager:
+    def __init__(self, input_files):
+        self.file_handlers = []
+        self._assign_file_handlers(input_files)
+
+    def _assign_file_handlers(self, input_files):
+        for input_file in input_files:
+            if 'ssh_host' in input_file:
+                self.file_handlers.append(SSHFileHandler(input_file))
+            elif 'http_url' in input_file:
+                self.file_handlers.append(HTTPFileHandler(input_file))
+            else:
+                raise Exception('Input file does not contain any key like ssh_host or http_url.')
+
+    def input_file_keys(self):
+        return [file_handler.file_key for file_handler in self.file_handlers]
+
+    def find_file_handler(self, json_request):
+        for file_handler in self.file_handlers:
+            if file_handler.is_request_valid(json_request):
+                return file_handler
+        raise Exception('Data container does not provide a file matching the specified parameters.')
+
+
+class SSHFileHandler:
+    def __init__(self, input_file):
+        self.host = input_file['ssh_host']
+        self.username = input_file['ssh_username']
+        self.password = input_file['ssh_password']
+        self.file_dir = input_file['ssh_file_dir']
+        self.file_name = input_file['ssh_file_name']
+        self.file_key = key_generator()
+        self._retrieve()
+
+    def is_request_valid(self, json_request):
+        if json_request['ssh_host'] == self.host \
+                and json_request['ssh_username'] == self.username \
+                and json_request['ssh_file_dir'] == self.file_dir \
+                and json_request['ssh_file_name'] == self.file_name:
+            if json_request['input_file_key'] == self.file_key:
+                return True
+            raise Exception('Value of parameter input_file_key is not valid for requested file.')
+        return False
+
+    def local_file_dir(self):
+        return os.path.join(
+            LOCAL_FILE_BASE_DIR,
+            self.host,
+            self.username,
+            self.file_dir.lstrip('/')
+        )
+
+    def local_file_name(self):
+        return self.file_name
+
+    def _retrieve(self):
+        local_file_dir = self.local_file_dir()
+        local_file_name = self.local_file_name()
+
+        if not os.path.exists(local_file_dir):
+            os.makedirs(local_file_dir)
+
+        remote_file_path = os.path.join(self.file_dir, self.file_name)
+        local_file_path = os.path.join(local_file_dir, local_file_name)
+
+        with SSHClient() as client:
+            client.set_missing_host_key_policy(AutoAddPolicy())
+            client.connect(
+                self.host,
+                username=self.username,
+                password=self.password
+            )
+            with client.open_sftp() as sftp:
+                sftp.get(remote_file_path, local_file_path)
+
+
+class HTTPFileHandler:
+    def __init__(self, input_file):
+        self.url = input_file['http_url']
+        self.data = input_file.get('http_data')
+        self.headers = input_file.get('http_headers')
+        self.file_key = key_generator()
+        self.file_dir = uuid4()
+        self.file_name = uuid4()
+        self._retrieve()
+
+    def is_request_valid(self, json_request):
+        if json_request['http_url'] == self.url \
+                and json_request['http_data'] == self.data \
+                and json_request['http_headers'] == self.headers:
+            if json_request['input_file_key'] == self.file_key:
+                return True
+            raise Exception('Value of parameter input_file_key is not valid for requested file.')
+        return False
+
+    def local_file_dir(self):
+        return os.path.join(
+            LOCAL_FILE_BASE_DIR,
+            self.file_dir
+        )
+
+    def local_file_name(self):
+        return self.file_name
+
+    def _retrieve(self):
+        local_file_dir = self.local_file_dir()
+        local_file_name = self.local_file_name()
+
+        if not os.path.exists(local_file_dir):
+            os.makedirs(local_file_dir)
+
+        r = requests.get(
+            self.url,
+            data=self.data,
+            headers=self.headers,
+            stream=True
+        )
+
+        r.raise_for_status()
+
+        local_file_path = os.path.join(local_file_dir, local_file_name)
+
+        with open(local_file_path, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=1024):
+                if chunk:
+                    f.write(chunk)
+
+        r.raise_for_status()

@@ -1,0 +1,59 @@
+from psutil import Process
+from os.path import getsize, join
+from time import sleep
+from threading import Lock
+from math import ceil
+
+
+class Telemetry:
+    def __init__(self, process, config):
+        self.telemetry_interval_seconds = 5
+        self.process = process
+        self.config = config
+        self.max_vms_memory = 0
+        self.max_rss_memory = 0
+        self.lock = Lock()
+
+    # source: http://stackoverflow.com/a/13607392
+    def monitor(self):
+        while True:
+            try:
+                pp = Process(self.process.pid)
+                processes = list(pp.children(recursive=True))
+                processes.append(pp)
+
+                vms_memory = 0
+                rss_memory = 0
+
+                for p in processes:
+                    try:
+                        mem_info = p.memory_info()
+                        rss_memory += mem_info[0]
+                        vms_memory += mem_info[1]
+                    except:
+                        pass
+                with self.lock:
+                    self.max_vms_memory = max(self.max_vms_memory, vms_memory)
+                    self.max_rss_memory = max(self.max_rss_memory, rss_memory)
+            except:
+                break
+            sleep(self.telemetry_interval_seconds)
+
+    def _input_file_sizes(self):
+        return _file_sizes(self.config['main']['local_input_files'])
+
+    def _result_file_sizes(self):
+        return _file_sizes(self.config['main']['local_result_files'])
+
+    def result(self):
+        with self.lock:
+            return {
+                'max_vms_memory': ceil(self.max_vms_memory / (1024 * 1024)),
+                'max_rss_memory': ceil(self.max_rss_memory / (1024 * 1024)),
+                'input_file_sizes': self._input_file_sizes(),
+                'result_file_sizes': self._result_file_sizes()
+            }
+
+
+def _file_sizes(file_list):
+    return [ceil(getsize(join(f['dir'], f['name'])) / (1024 * 1024)) for f in file_list]
