@@ -89,12 +89,20 @@ def send_results(json_input, config):
 def _json_send_results(result_file, local_result_file):
     local_result_file_path = os.path.join(local_result_file['dir'], local_result_file['name'])
     with open(local_result_file_path) as f:
-        json_data = dumps(loads(f.read()))
+        data = loads(f.read())
+        if result_file.get('json_data'):
+            for key, val in result_file['json_data'].items():
+                data[key] = val
+
+        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+        if result_file.get('json_headers'):
+            for key, val in result_file['json_headers']:
+                headers[key] = val
 
     r = requests.post(
         result_file['json_url'],
-        data=json_data,
-        headers={'Content-type': 'application/json', 'Accept': 'text/plain'}
+        data=dumps(data),
+        headers=headers
     )
     r.raise_for_status()
 
