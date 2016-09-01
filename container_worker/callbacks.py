@@ -7,7 +7,8 @@ STATES = [
     'waiting',
     'processing',
     'success',          # end state
-    'failed'            # end state
+    'failed',           # end state
+    'cancelled'         # end state
 ]
 
 AC_CALLBACK_TYPES = [
