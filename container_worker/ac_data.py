@@ -5,6 +5,7 @@ from paramiko import SSHClient, AutoAddPolicy
 
 from container_worker.dc_data import SSHFileHandler as SSHFH
 from container_worker.dc_data import HTTPFileHandler as HTTPFH
+from container_worker.dc_data import auth
 
 
 class FileManager:
@@ -55,8 +56,7 @@ def retrieve_files(json_response, config):
 
         r = requests.get(
             input_file['data_container_url'],
-            data=dumps(input_file),
-            headers={'Content-type': 'application/json', 'Accept': 'text/plain'},
+            json=input_file,
             stream=True
         )
 
@@ -90,19 +90,16 @@ def _json_send_results(result_file, local_result_file):
     local_result_file_path = os.path.join(local_result_file['dir'], local_result_file['name'])
     with open(local_result_file_path) as f:
         data = loads(f.read())
-        if result_file.get('json_data'):
-            for key, val in result_file['json_data'].items():
-                data[key] = val
 
-        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-        if result_file.get('json_headers'):
-            for key, val in result_file['json_headers']:
-                headers[key] = val
+    # set additional json fields specified in result_file
+    if result_file.get('json_data'):
+        for key, val in result_file['json_data'].items():
+            data[key] = val
 
     r = requests.post(
         result_file['json_url'],
-        data=dumps(data),
-        headers=headers
+        json=data,
+        auth=auth(result_file.get('json_auth'))
     )
     r.raise_for_status()
 
@@ -113,7 +110,11 @@ def _http_send_results(result_file, local_result_file):
     files = {
         'file': (result_file.get('http_file_name'), open(local_result_file_path, 'rb'), 'application/octet-stream')
     }
-    r = requests.post(result_file['http_url'], files=files, headers=result_file.get('http_headers'))
+    r = requests.post(
+        result_file['http_url'],
+        files=files,
+        auth=auth(result_file.get('http_auth'))
+    )
     r.raise_for_status()
 
 

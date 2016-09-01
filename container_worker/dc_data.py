@@ -3,6 +3,7 @@ import requests
 from os.path import expanduser
 from paramiko import SSHClient, AutoAddPolicy
 from uuid import uuid4
+from requests.auth import HTTPBasicAuth, HTTPDigestAuth
 
 from container_worker.helper import key_generator
 
@@ -44,14 +45,17 @@ class SSHFileHandler:
         self._retrieve()
 
     def is_request_valid(self, json_request):
-        if json_request['ssh_host'] == self.host \
-                and json_request['ssh_username'] == self.username \
-                and json_request['ssh_file_dir'] == self.file_dir \
-                and json_request['ssh_file_name'] == self.file_name:
-            if json_request['input_file_key'] == self.file_key:
-                return True
+        if not json_request['ssh_host'] == self.host:
+            return False
+        if not json_request['ssh_username'] == self.username:
+            return False
+        if not json_request['ssh_file_dir'] == self.file_dir:
+            return False
+        if not json_request['ssh_file_name'] == self.file_name:
+            return False
+        if not json_request['input_file_key'] == self.file_key:
             raise Exception('Value of parameter input_file_key is not valid for requested file.')
-        return False
+        return True
 
     def local_file_dir(self):
         return os.path.join(
@@ -89,20 +93,20 @@ class HTTPFileHandler:
     def __init__(self, input_file):
         self.url = input_file['http_url']
         self.data = input_file.get('http_data')
-        self.headers = input_file.get('http_headers')
+        self.auth = auth(input_file.get('http_auth'))
         self.file_key = key_generator()
         self.file_dir = uuid4()
         self.file_name = uuid4()
         self._retrieve()
 
     def is_request_valid(self, json_request):
-        if json_request['http_url'] == self.url \
-                and json_request['http_data'] == self.data \
-                and json_request['http_headers'] == self.headers:
-            if json_request['input_file_key'] == self.file_key:
-                return True
+        if not json_request['http_url'] == self.url:
+            return False
+        if not json_request.get['http_data'] == self.data:
+            return False
+        if not json_request['input_file_key'] == self.file_key:
             raise Exception('Value of parameter input_file_key is not valid for requested file.')
-        return False
+        return True
 
     def local_file_dir(self):
         return os.path.join(
@@ -122,8 +126,8 @@ class HTTPFileHandler:
 
         r = requests.get(
             self.url,
-            data=self.data,
-            headers=self.headers,
+            json=self.data,
+            auth=self.auth,
             stream=True
         )
 
@@ -137,3 +141,22 @@ class HTTPFileHandler:
                     f.write(chunk)
 
         r.raise_for_status()
+
+
+def auth(http_auth):
+    if not http_auth:
+        return None
+
+    if http_auth.get('basic_username'):
+        return HTTPBasicAuth(
+            http_auth.get('basic_username'),
+            http_auth.get('basic_password')
+        )
+
+    if http_auth.get('digest_username'):
+        return HTTPDigestAuth(
+            http_auth.get('digest_username'),
+            http_auth.get('digest_password')
+        )
+
+    raise Exception('Authorization information is not valid.')
