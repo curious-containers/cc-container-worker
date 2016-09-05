@@ -5,7 +5,7 @@ from paramiko import SSHClient, AutoAddPolicy
 from uuid import uuid4
 from requests.auth import HTTPBasicAuth, HTTPDigestAuth
 
-from container_worker.helper import key_generator
+from container_worker.helper import key_generator, equal_keys
 
 LOCAL_FILE_BASE_DIR = expanduser('~')
 
@@ -53,7 +53,7 @@ class SSHFileHandler:
             return False
         if not json_request['ssh_file_name'] == self.file_name:
             return False
-        if not json_request['input_file_key'] == self.file_key:
+        if not equal_keys(json_request['input_file_key'], self.file_key):
             raise Exception('Value of parameter input_file_key is not valid for requested file.')
         return True
 
@@ -104,7 +104,7 @@ class HTTPFileHandler:
             return False
         if not json_request.get['http_data'] == self.data:
             return False
-        if not json_request['input_file_key'] == self.file_key:
+        if not equal_keys(json_request['input_file_key'], self.file_key):
             raise Exception('Value of parameter input_file_key is not valid for requested file.')
         return True
 
