@@ -1,7 +1,7 @@
 import os
-from toml import loads
+import json
+import toml
 from subprocess import Popen, PIPE
-from json import dumps
 from traceback import format_exc
 from threading import Thread
 
@@ -30,7 +30,7 @@ def main(settings):
 
     try:
         with open(CONFIG_FILE_PATH) as f:
-            config = loads(f.read())
+            config = toml.loads(f.read())
     except:
         description = 'Could not load TOML config file from path {}'.format(CONFIG_FILE_PATH)
         callback_handler.send_callback(
@@ -88,7 +88,7 @@ def main(settings):
 
         if settings.get('parameters'):
             if config['main'].get('parameters_as_json'):
-                command = '{} \'{}\''.format(command, dumps(settings['parameters']))
+                command = '{} \'{}\''.format(command, json.dumps(settings['parameters']))
             else:
                 command += ''.join([' {} {}'.format(key, val) for key, val in settings['parameters'].items()])
 

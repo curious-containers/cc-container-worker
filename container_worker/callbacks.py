@@ -59,7 +59,7 @@ class CallbackHandler:
         self.callback['container_id'] = settings['container_id']
 
         self.callback_url = settings['callback_url']
-        self.callback_type_list = DC_CALLBACK_TYPES if settings['is_data_container'] else AC_CALLBACK_TYPES
+        self.callback_type_list = DC_CALLBACK_TYPES if settings['container_type'] == 'data' else AC_CALLBACK_TYPES
 
     def send_callback(self, callback_type, state, description, exception=None, telemetry=None):
 

@@ -1,9 +1,9 @@
 import sys
-from json import loads
+import json
 
 from container_worker import ac_main, dc_main, ic_main
 
-settings = loads(sys.argv[1])
+settings = json.loads(sys.argv[1])
 
 if settings['container_type'] == 'data':
     dc_main.main(settings)
