@@ -3,6 +3,7 @@ from os.path import getsize, join
 from time import sleep
 from threading import Lock
 from math import ceil
+from time import time
 
 
 class Telemetry:
@@ -13,6 +14,7 @@ class Telemetry:
         self.max_vms_memory = 0
         self.max_rss_memory = 0
         self.lock = Lock()
+        self.timestamp = time()
 
     # source: http://stackoverflow.com/a/13607392
     def monitor(self):
@@ -51,7 +53,8 @@ class Telemetry:
                 'max_vms_memory': ceil(self.max_vms_memory / (1024 * 1024)),
                 'max_rss_memory': ceil(self.max_rss_memory / (1024 * 1024)),
                 'input_file_sizes': self._input_file_sizes(),
-                'result_file_sizes': self._result_file_sizes()
+                'result_file_sizes': self._result_file_sizes(),
+                'wall_time': time() - self.timestamp
             }
 
 
