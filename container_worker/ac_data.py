@@ -1,11 +1,12 @@
 import requests
 import os
-from json import dumps, loads
+import json
 from paramiko import SSHClient, AutoAddPolicy
 
 from container_worker.dc_data import SSHFileHandler as SSHFH
 from container_worker.dc_data import HTTPFileHandler as HTTPFH
 from container_worker.dc_data import auth
+from container_worker.helper import prepare_response
 
 
 class FileManager:
@@ -83,13 +84,15 @@ def send_results(json_input, config):
         elif 'json_url' in result_file:
             _http_send_results(result_file, local_result_file)
         else:
-            raise Exception('Send config for result file not appropriate: {}'.format(dumps(result_file)))
+            raise Exception('Send config for result file not appropriate: {}'.format(
+                json.dumps(prepare_response(result_file)))
+            )
 
 
 def _json_send_results(result_file, local_result_file):
     local_result_file_path = os.path.join(local_result_file['dir'], local_result_file['name'])
     with open(local_result_file_path) as f:
-        data = loads(f.read())
+        data = json.load(f)
 
     # set additional json fields specified in result_file
     if result_file.get('json_data'):
