@@ -30,7 +30,7 @@ def main(settings):
 
     try:
         with open(CONFIG_FILE_PATH) as f:
-            config = toml.loads(f.read())
+            config = toml.load(f)
     except:
         description = 'Could not load TOML config file from path {}'.format(CONFIG_FILE_PATH)
         callback_handler.send_callback(
