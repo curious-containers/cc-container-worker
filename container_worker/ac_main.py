@@ -87,10 +87,12 @@ def main(settings):
         command = config['main']['application_command']
 
         if settings.get('parameters'):
-            if config['main'].get('parameters_as_json'):
+            if isinstance(settings['parameters'], dict):
                 command = '{} \'{}\''.format(command, json.dumps(settings['parameters']))
+            elif isinstance(settings['parameters'], list):
+                command += ''.join([' {}'.format(val) for val in settings['parameters']])
             else:
-                command += ''.join([' {} {}'.format(key, val) for key, val in settings['parameters'].items()])
+                raise Exception('Type of parameters not valid: {}'.format(type(settings['parameters'])))
 
         print(command)
         sp = Popen(command, stdout=PIPE, stderr=PIPE, shell=True)
