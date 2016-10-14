@@ -77,20 +77,23 @@ def send_results(json_input, config):
     for result_file, local_result_file in zip(json_input, config['main']['local_result_files']):
         if not result_file:
             continue
+        local_result_file_path = os.path.join(local_result_file['dir'], local_result_file['name'])
+        if local_result_file.get('optional'):
+            if not os.path.exists(local_result_file_path):
+                continue
         if 'ssh_host' in result_file:
-            _ssh_send_results(result_file, local_result_file)
+            _ssh_send_results(result_file, local_result_file_path)
         elif 'http_url' in result_file:
-            _http_send_results(result_file, local_result_file)
+            _http_send_results(result_file, local_result_file_path)
         elif 'json_url' in result_file:
-            _http_send_results(result_file, local_result_file)
+            _http_send_results(result_file, local_result_file_path)
         else:
             raise Exception('Send config for result file not appropriate: {}'.format(
                 json.dumps(prepare_response(result_file)))
             )
 
 
-def _json_send_results(result_file, local_result_file):
-    local_result_file_path = os.path.join(local_result_file['dir'], local_result_file['name'])
+def _json_send_results(result_file, local_result_file_path):
     with open(local_result_file_path) as f:
         data = json.load(f)
 
@@ -107,9 +110,7 @@ def _json_send_results(result_file, local_result_file):
     r.raise_for_status()
 
 
-def _http_send_results(result_file, local_result_file):
-    local_result_file_path = os.path.join(local_result_file['dir'], local_result_file['name'])
-
+def _http_send_results(result_file, local_result_file_path):
     files = {
         'file': (result_file.get('http_file_name'), open(local_result_file_path, 'rb'), 'application/octet-stream')
     }
@@ -121,8 +122,7 @@ def _http_send_results(result_file, local_result_file):
     r.raise_for_status()
 
 
-def _ssh_send_results(result_file, local_result_file):
-    local_result_file_path = os.path.join(local_result_file['dir'], local_result_file['name'])
+def _ssh_send_results(result_file, local_result_file_path):
     ssh_file_dir = result_file['ssh_file_dir']
     ssh_file_path = os.path.join(ssh_file_dir, result_file['ssh_file_name'])
 
