@@ -78,9 +78,12 @@ def send_results(json_input, config):
         if not result_file:
             continue
         local_result_file_path = os.path.join(local_result_file['dir'], local_result_file['name'])
-        if local_result_file.get('optional'):
-            if not os.path.exists(local_result_file_path):
+        if not os.path.isfile(local_result_file_path):
+            if local_result_file.get('optional'):
                 continue
+            raise Exception('Local result file expected, but not existent: {}'.format(
+                json.dumps(local_result_file)
+            ))
         if 'ssh_host' in result_file:
             _ssh_send_results(result_file, local_result_file_path)
         elif 'http_url' in result_file:
@@ -89,8 +92,8 @@ def send_results(json_input, config):
             _http_send_results(result_file, local_result_file_path)
         else:
             raise Exception('Send config for result file not appropriate: {}'.format(
-                json.dumps(prepare_response(result_file)))
-            )
+                json.dumps(prepare_response(result_file))
+            ))
 
 
 def _json_send_results(result_file, local_result_file_path):
