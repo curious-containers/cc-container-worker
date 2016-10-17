@@ -1,5 +1,5 @@
 from psutil import Process
-from os.path import getsize, join
+from os.path import getsize, join, isfile
 from time import sleep
 from threading import Lock
 from math import ceil
@@ -59,4 +59,4 @@ class Telemetry:
 
 
 def _file_sizes(file_list):
-    return [ceil(getsize(join(f['dir'], f['name'])) / (1024 * 1024)) for f in file_list]
+    return [ceil(getsize(join(f['dir'], f['name'])) / (1024 * 1024)) if isfile(f) else None for f in file_list]
