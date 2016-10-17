@@ -89,9 +89,9 @@ def send_results(json_input, config):
         elif 'http_url' in result_file:
             _http_send_results(result_file, local_result_file_path)
         elif 'json_url' in result_file:
-            _http_send_results(result_file, local_result_file_path)
+            _json_send_results(result_file, local_result_file_path)
         else:
-            raise Exception('Send config for result file not appropriate: {}'.format(
+            raise Exception('Result file configuration not appropriate: {}'.format(
                 json.dumps(prepare_response(result_file))
             ))
 
