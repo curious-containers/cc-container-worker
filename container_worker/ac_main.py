@@ -7,6 +7,8 @@ from threading import Thread
 
 from container_worker.ac_data import retrieve_files, send_results, FileManager
 from container_worker.ac_telemetry import Telemetry
+from container_worker.ac_tracing import Tracing
+from container_worker.ac_sandbox import Sandbox
 from container_worker.callbacks import CallbackHandler
 
 CONFIG_FILE_PATH = '/opt/config.toml'
@@ -94,14 +96,20 @@ def main(settings):
             else:
                 raise Exception('Type of parameters not valid: {}'.format(type(settings['parameters'])))
 
+        sandbox = Sandbox(config=settings.get('sandbox'))
+
         print(command)
-        sp = Popen(command, stdout=PIPE, stderr=PIPE, shell=True)
+        sp = Popen(command, stdout=PIPE, stderr=PIPE, shell=True, preexec_fn=sandbox.enter)
+
+        tracing = Tracing(sp, config=settings.get('tracing'))
+        tracing.start()
 
         telemetry = Telemetry(sp, config=config)
         t = Thread(target=telemetry.monitor)
         t.start()
 
         std_out, std_err = sp.communicate()
+        tracing.finish()
         return_code = sp.returncode
     except:
         description = 'Processing of application command failed.'
@@ -122,7 +130,8 @@ def main(settings):
         callback_type='processed',
         state='success',
         description=description,
-        telemetry=telemetry.result()
+        telemetry=telemetry.result(),
+
     )
 
     try:
