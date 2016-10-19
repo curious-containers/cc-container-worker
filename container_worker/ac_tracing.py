@@ -151,9 +151,6 @@ class Tracing:
 
     def result(self):
         with self.lock:
-            # Wait for the tracer to terminate
-            self.tracer.wait()
-
             if self.tracer.runtime_tracing or \
                     self.tracer.file_access_tracing or \
                     self.tracer.syscall_tracing:
