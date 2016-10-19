@@ -85,6 +85,7 @@ def main(settings):
     description = 'Input files retrieved.'
     callback_handler.send_callback(callback_type='files_retrieved', state='success', description=description)
 
+    telemetry_data = None
     try:
         command = config['main']['application_command']
 
@@ -101,7 +102,7 @@ def main(settings):
         print(command)
         sp = Popen(command, stdout=PIPE, stderr=PIPE, shell=True, preexec_fn=sandbox.enter)
 
-        tracing = Tracing(sp, config=settings.get('tracing'))
+        tracing = Tracing(sp.pid, config=settings.get('tracing'))
         tracing.start()
 
         telemetry = Telemetry(sp, config=config)
@@ -111,6 +112,12 @@ def main(settings):
         std_out, std_err = sp.communicate()
         tracing.finish()
         return_code = sp.returncode
+
+        # Collect telemetry
+        telemetry_data = telemetry.result()
+        tracing_data = tracing.result()
+        if tracing_data:
+            telemetry_data['tracing'] = tracing_data
     except:
         description = 'Processing of application command failed.'
         callback_handler.send_callback(
@@ -130,8 +137,7 @@ def main(settings):
         callback_type='processed',
         state='success',
         description=description,
-        telemetry=telemetry.result(),
-
+        telemetry=telemetry_data,
     )
 
     try:

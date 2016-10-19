@@ -4,7 +4,7 @@ from process_tracing.recording import FileAccessRecord, SyscallRecord
 
 
 class Tracing:
-    def __init__(self, process, config):
+    def __init__(self, process, config=None):
         self.process = process
         self.config = config
         self.lock = Lock()
@@ -14,20 +14,25 @@ class Tracing:
 
     def start(self):
         # Configure the tracing instance
-        self.tracer.runtime_tracing = self.config.get('enabled', False)
-        file_access_tracing = self.config.get('file_access', 'none')
-        if file_access_tracing != 'none':
-            self.tracer.file_access_tracing = (file_access_tracing == 'short')
-            self.tracer.file_access_detailed_tracing = (file_access_tracing == 'full')
-        else:
+        if not self.config:
+            self.tracer.runtime_tracing = False
             self.tracer.file_access_tracing = False
-
-        syscall_tracing = self.config.get('syscall', 'none')
-        if syscall_tracing != 'none':
-            self.tracer.syscall_tracing = (syscall_tracing == 'short')
-            self.tracer.syscall_argument_tracing = (syscall_tracing == 'full')
+            self.tracer.syscall_tracing = False
         else:
-            self.tracer.set_file_access_tracing_enabled = False
+            self.tracer.runtime_tracing = self.config.get('enabled', False)
+            file_access_tracing = self.config.get('file_access', 'none')
+            if file_access_tracing != 'none':
+                self.tracer.file_access_tracing = (file_access_tracing == 'short')
+                self.tracer.file_access_detailed_tracing = (file_access_tracing == 'full')
+            else:
+                self.tracer.file_access_tracing = False
+
+            syscall_tracing = self.config.get('syscall', 'none')
+            if syscall_tracing != 'none':
+                self.tracer.syscall_tracing = (syscall_tracing == 'short')
+                self.tracer.syscall_argument_tracing = (syscall_tracing == 'full')
+            else:
+                self.tracer.set_file_access_tracing_enabled = False
 
         # Start the tracing process (if tracing is requested)
         if self.tracer.runtime_tracing or self.tracer.file_access_tracing or self.tracer.syscall_tracing:
@@ -149,18 +154,23 @@ class Tracing:
             # Wait for the tracer to terminate
             self.tracer.wait()
 
-            processes = self._result_processes()
-            file_access = self._result_file_access()
-            syscalls = self._result_syscalls()
-            result = {}
+            if self.tracer.runtime_tracing or \
+                    self.tracer.file_access_tracing or \
+                    self.tracer.syscall_tracing:
+                processes = self._result_processes()
+                file_access = self._result_file_access()
+                syscalls = self._result_syscalls()
+                result = {}
 
-            if processes:
-                result['processes'] = processes
+                if processes:
+                    result['processes'] = processes
 
-            if file_access:
-                result['file_access'] = file_access
+                if file_access:
+                    result['file_access'] = file_access
 
-            if syscalls:
-                result['syscalls'] = syscalls
+                if syscalls:
+                    result['syscalls'] = syscalls
 
-            return result
+                return result
+            else:
+                return None
