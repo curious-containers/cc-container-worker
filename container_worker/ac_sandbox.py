@@ -33,10 +33,10 @@ class Sandbox:
 
     def enter(self):
         # Establish resource limits if requested
-        if self.config.get('limits', None):
+        if self.config and self.config.get('limits', None):
             Sandbox._load_limits(self.config['limits'])
 
-        if self.config.get('seccomp', None):
+        if self.config and self.config.get('seccomp', None):
             Sandbox._load_seccomp(self.config['seccomp'], self.termination_exit_code)
 
     @staticmethod
