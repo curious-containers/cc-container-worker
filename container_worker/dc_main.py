@@ -6,7 +6,7 @@ from container_worker.callbacks import CallbackHandler
 from container_worker.dc_data import FileManager
 
 
-def main(settings):
+def main(settings, debug=False):
     app = Flask('sftp-data-container')
     callback_handler = CallbackHandler(settings)
     file_manager = None

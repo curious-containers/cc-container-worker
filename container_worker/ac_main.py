@@ -9,13 +9,16 @@ from container_worker.ac_data import retrieve_files, send_results, FileManager
 from container_worker.ac_telemetry import Telemetry
 from container_worker.ac_tracing import Tracing
 from container_worker.ac_sandbox import Sandbox
-from container_worker.callbacks import CallbackHandler
+from container_worker.callbacks import CallbackHandler, DebugCallbackHandler
 
 CONFIG_FILE_PATH = '/opt/config.toml'
 
 
-def main(settings):
-    callback_handler = CallbackHandler(settings)
+def main(settings, debug=False):
+    if debug:
+        callback_handler = DebugCallbackHandler(settings)
+    else:
+        callback_handler = CallbackHandler(settings)
 
     return_code = 0
     std_err = ''
@@ -33,6 +36,8 @@ def main(settings):
     try:
         with open(CONFIG_FILE_PATH) as f:
             config = toml.load(f)
+            if debug:
+                callback_handler.config = config
     except:
         description = 'Could not load TOML config file from path {}'.format(CONFIG_FILE_PATH)
         callback_handler.send_callback(
