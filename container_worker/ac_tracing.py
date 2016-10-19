@@ -10,7 +10,7 @@ class Tracing:
         self.lock = Lock()
 
         # Create tracer
-        self.tracer = T(self.process, stop=True)
+        self.tracer = T(self.process, stop=False)
 
     def start(self):
         # Configure the tracing instance
