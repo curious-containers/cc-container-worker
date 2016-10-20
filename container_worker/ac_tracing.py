@@ -140,7 +140,6 @@ class Tracing:
                             argument_record = {
                                 'name': argument.name,
                                 'type': argument.type,
-                                'value': argument.value,
                                 'text': argument.text
                             }
                             record['attributes'].append(argument_record)
