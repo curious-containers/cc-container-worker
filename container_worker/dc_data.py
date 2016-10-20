@@ -88,7 +88,6 @@ class SSHFileHandler:
 class HTTPFileHandler:
     def __init__(self, input_file):
         self.url = input_file['http_url']
-        self.data = input_file.get('http_data')
         self.auth = auth(input_file.get('http_auth'))
         self.ssl_verify = input_file.get('http_ssl_verify', True)
         self.file_key = key_generator()
@@ -97,8 +96,6 @@ class HTTPFileHandler:
 
     def is_request_valid(self, json_request):
         if not json_request['http_url'] == self.url:
-            return False
-        if not json_request.get['http_data'] == self.data:
             return False
         if not equal_keys(json_request['input_file_key'], self.file_key):
             raise Exception('Value of parameter input_file_key is not valid for requested file.')
@@ -119,7 +116,6 @@ class HTTPFileHandler:
 
         r = requests.get(
             self.url,
-            json=self.data,
             auth=self.auth,
             verify=self.ssl_verify,
             stream=True
