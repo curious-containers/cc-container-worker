@@ -128,7 +128,7 @@ class Tracing:
                 if type(entry) == SyscallRecord:
                     record = {
                         'pid': pid,
-                        'name': entry.filename,
+                        'name': entry.name,
                         'start': entry.t_start,
                         'end': entry.t_end,
                         'result': entry.result
