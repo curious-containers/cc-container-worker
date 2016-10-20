@@ -108,21 +108,29 @@ def _json_send_results(result_file, local_result_file_path):
     r = requests.post(
         result_file['json_url'],
         json=data,
-        auth=auth(result_file.get('json_auth'))
+        auth=auth(result_file.get('json_auth')),
+        verify=result_file.get('json_ssl_verify', True)
     )
     r.raise_for_status()
 
 
 def _http_send_results(result_file, local_result_file_path):
-    files = {
-        'file': (result_file.get('http_file_name'), open(local_result_file_path, 'rb'), 'application/octet-stream')
-    }
-    r = requests.post(
-        result_file['http_url'],
-        files=files,
-        auth=auth(result_file.get('http_auth'))
-    )
-    r.raise_for_status()
+    http_method = result_file.get('http_method', 'post').lower()
+    if http_method == 'put':
+        method_func = requests.put
+    elif http_method == 'post':
+        method_func = requests.post
+    else:
+        raise Exception('HTTP method not valid: {}'.format(result_file.get('http_method')))
+
+    with open(local_result_file_path, 'rb') as f:
+        r = method_func(
+            result_file['http_url'],
+            data=f,
+            auth=auth(result_file.get('http_auth')),
+            verify=result_file.get('http_ssl_verify', True)
+        )
+        r.raise_for_status()
 
 
 def _ssh_send_results(result_file, local_result_file_path):

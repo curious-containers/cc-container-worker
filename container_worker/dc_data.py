@@ -42,6 +42,7 @@ class SSHFileHandler:
         self.file_dir = input_file['ssh_file_dir']
         self.file_name = input_file['ssh_file_name']
         self.file_key = key_generator()
+        self._local_file_name = str(uuid4())
         self._retrieve()
 
     def is_request_valid(self, json_request):
@@ -58,15 +59,10 @@ class SSHFileHandler:
         return True
 
     def local_file_dir(self):
-        return os.path.join(
-            LOCAL_FILE_BASE_DIR,
-            self.host,
-            self.username,
-            self.file_dir.lstrip('/')
-        )
+        return LOCAL_FILE_BASE_DIR
 
     def local_file_name(self):
-        return self.file_name
+        return self._local_file_name
 
     def _retrieve(self):
         local_file_dir = self.local_file_dir()
@@ -92,30 +88,24 @@ class SSHFileHandler:
 class HTTPFileHandler:
     def __init__(self, input_file):
         self.url = input_file['http_url']
-        self.data = input_file.get('http_data')
         self.auth = auth(input_file.get('http_auth'))
+        self.ssl_verify = input_file.get('http_ssl_verify', True)
         self.file_key = key_generator()
-        self.file_dir = uuid4()
-        self.file_name = uuid4()
+        self._local_file_name = str(uuid4())
         self._retrieve()
 
     def is_request_valid(self, json_request):
         if not json_request['http_url'] == self.url:
-            return False
-        if not json_request.get['http_data'] == self.data:
             return False
         if not equal_keys(json_request['input_file_key'], self.file_key):
             raise Exception('Value of parameter input_file_key is not valid for requested file.')
         return True
 
     def local_file_dir(self):
-        return os.path.join(
-            LOCAL_FILE_BASE_DIR,
-            self.file_dir
-        )
+        return LOCAL_FILE_BASE_DIR
 
     def local_file_name(self):
-        return self.file_name
+        return self._local_file_name
 
     def _retrieve(self):
         local_file_dir = self.local_file_dir()
@@ -126,8 +116,8 @@ class HTTPFileHandler:
 
         r = requests.get(
             self.url,
-            json=self.data,
             auth=self.auth,
+            verify=self.ssl_verify,
             stream=True
         )
 
