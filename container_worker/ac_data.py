@@ -108,7 +108,8 @@ def _json_send_results(result_file, local_result_file_path):
     r = requests.post(
         result_file['json_url'],
         json=data,
-        auth=auth(result_file.get('json_auth'))
+        auth=auth(result_file.get('json_auth')),
+        verify=result_file.get('json_ssl_verify', True)
     )
     r.raise_for_status()
 
@@ -120,7 +121,8 @@ def _http_send_results(result_file, local_result_file_path):
     r = requests.post(
         result_file['http_url'],
         files=files,
-        auth=auth(result_file.get('http_auth'))
+        auth=auth(result_file.get('http_auth')),
+        verify=result_file.get('http_ssl_verify', True)
     )
     r.raise_for_status()
 
