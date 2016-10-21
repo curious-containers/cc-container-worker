@@ -115,13 +115,13 @@ def _json_send_results(result_file, local_result_file_path):
 
 
 def _http_send_results(result_file, local_result_file_path):
-    http_method = result_file.get('http_method', 'post').lower()
+    http_method = result_file['http_method'].lower()
     if http_method == 'put':
         method_func = requests.put
     elif http_method == 'post':
         method_func = requests.post
     else:
-        raise Exception('HTTP method not valid: {}'.format(result_file.get('http_method')))
+        raise Exception('HTTP method not valid: {}'.format(result_file['http_method']))
 
     with open(local_result_file_path, 'rb') as f:
         r = method_func(
