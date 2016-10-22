@@ -12,7 +12,7 @@ if len(sys.argv) > 2 and sys.argv[1] in ['--debug', '-d']:
 settings = json.loads(sys.argv[settings_index])
 
 if settings['container_type'] == 'data':
-    dc_main.main(settings, debug)
+    dc_main.main(settings)
 elif settings['container_type'] == 'application':
     ac_main.main(settings, debug)
 else:
