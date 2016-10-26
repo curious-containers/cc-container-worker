@@ -100,11 +100,6 @@ def _json_send_results(result_file, local_result_file_path):
     with open(local_result_file_path) as f:
         data = json.load(f)
 
-    # set additional json fields specified in result_file
-    if result_file.get('json_data'):
-        for key, val in result_file['json_data'].items():
-            data[key] = val
-
     r = requests.post(
         result_file['json_url'],
         json=data,
