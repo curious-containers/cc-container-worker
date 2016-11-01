@@ -5,7 +5,7 @@ from subprocess import Popen, PIPE
 from traceback import format_exc
 from threading import Thread
 
-from container_worker.ac_data import retrieve_files, send_results, FileManager
+from container_worker.data import ac_download_files, ac_upload_results
 from container_worker.ac_telemetry import Telemetry
 from container_worker.ac_tracing import Tracing
 from container_worker.ac_sandbox import Sandbox
@@ -19,19 +19,6 @@ def main(settings, debug=False):
         callback_handler = DebugCallbackHandler(settings)
     else:
         callback_handler = CallbackHandler(settings)
-
-    return_code = 0
-    std_err = ''
-
-    if settings.get('mtu'):
-        for key, val in settings['mtu'].items():
-            command = 'ifconfig {} mtu {}'.format(key, val)
-            sp = Popen(command, stdout=PIPE, stderr=PIPE, shell=True)
-            std_out, std_err = sp.communicate()
-            return_code = sp.returncode
-            if return_code != 0:
-                print('Cloud not set mtu {} for interface {}'.format(val, key))
-                exit(2)
 
     try:
         with open(CONFIG_FILE_PATH) as f:
@@ -76,10 +63,7 @@ def main(settings, debug=False):
         exit(6)
 
     try:
-        if settings.get('no_cache'):
-            FileManager(input_files, config['main']['local_input_files'])
-        else:
-            retrieve_files(input_files, config=config)
+        ac_download_files(input_files, config['main']['local_input_files'])
     except:
         description = 'Could not retrieve input files.'
         callback_handler.send_callback(
@@ -146,7 +130,7 @@ def main(settings, debug=False):
     )
 
     try:
-        send_results(result_files, config=config)
+        ac_upload_results(result_files, config['main']['local_result_files'])
     except:
         description = 'Could not send result files.'
         callback_handler.send_callback(

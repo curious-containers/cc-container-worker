@@ -16,8 +16,8 @@ class Telemetry:
         self.lock = Lock()
         self.timestamp = time()
 
-    # source: http://stackoverflow.com/a/13607392
     def monitor(self):
+        # source: http://stackoverflow.com/a/13607392
         while True:
             try:
                 pp = Process(self.process.pid)

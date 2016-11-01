@@ -1,8 +1,8 @@
-from flask import Flask, send_from_directory, request
+from flask import Flask, send_from_directory
 from traceback import format_exc
 
 from container_worker.callbacks import CallbackHandler
-from container_worker.dc_data import FileManager
+from container_worker.data import DCFileManager
 
 
 def main(settings):
@@ -20,7 +20,7 @@ def main(settings):
         exit(2)
 
     try:
-        file_manager = FileManager(settings['input_files'], settings['input_file_keys'])
+        file_manager = DCFileManager(settings['input_files'], settings['input_file_keys'])
     except:
         description = 'Could not retrieve input files.'
         callback_handler.send_callback(
@@ -31,11 +31,9 @@ def main(settings):
     description = 'Input files available.'
     callback_handler.send_callback(callback_type='files_retrieved', state='success', description=description)
 
-    @app.route('/', methods=['GET'])
-    def files():
-        json_request = request.get_json()
-        file_handler = file_manager.find_file_handler(json_request)
-
-        return send_from_directory(file_handler.local_file_dir(), file_handler.local_file_name(), as_attachment=True)
+    @app.route('/<key>', methods=['GET'])
+    def root(key):
+        file = file_manager.get_file(key)
+        return send_from_directory(file.local_file_dir, file.local_file_name, as_attachment=True)
 
     app.run(host='0.0.0.0', port=80)
