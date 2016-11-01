@@ -6,7 +6,6 @@ from paramiko import SSHClient, AutoAddPolicy
 from container_worker.dc_data import SSHFileHandler as SSHFH
 from container_worker.dc_data import HTTPFileHandler as HTTPFH
 from container_worker.dc_data import auth
-from container_worker.helper import prepare_response
 
 
 class FileManager:
@@ -91,9 +90,7 @@ def send_results(json_input, config):
         elif 'json_url' in result_file:
             _json_send_results(result_file, local_result_file_path)
         else:
-            raise Exception('Result file configuration not appropriate: {}'.format(
-                json.dumps(prepare_response(result_file))
-            ))
+            raise Exception('Result file configuration not appropriate.')
 
 
 def _json_send_results(result_file, local_result_file_path):

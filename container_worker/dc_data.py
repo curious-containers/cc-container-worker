@@ -4,59 +4,49 @@ from os.path import expanduser
 from paramiko import SSHClient, AutoAddPolicy
 from uuid import uuid4
 from requests.auth import HTTPBasicAuth, HTTPDigestAuth
+from werkzeug.exceptions import BadRequest
 
-from container_worker.helper import key_generator, equal_keys
+from container_worker.helper import equal_keys
 
 LOCAL_FILE_BASE_DIR = expanduser('~')
 
 
 class FileManager:
-    def __init__(self, input_files):
+    def __init__(self, input_files, input_file_keys):
         self.file_handlers = []
-        self._assign_file_handlers(input_files)
+        self._assign_file_handlers(input_files, input_file_keys)
 
-    def _assign_file_handlers(self, input_files):
-        for input_file in input_files:
+    def _assign_file_handlers(self, input_files, input_file_keys):
+        for input_file, input_file_key in zip(input_files, input_file_keys):
             if 'ssh_host' in input_file:
-                self.file_handlers.append(SSHFileHandler(input_file))
+                self.file_handlers.append(SSHFileHandler(input_file, input_file_key))
             elif 'http_url' in input_file:
-                self.file_handlers.append(HTTPFileHandler(input_file))
+                self.file_handlers.append(HTTPFileHandler(input_file, input_file_key))
             else:
                 raise Exception('Input file does not contain any key like ssh_host or http_url.')
-
-    def input_file_keys(self):
-        return [file_handler.file_key for file_handler in self.file_handlers]
 
     def find_file_handler(self, json_request):
         for file_handler in self.file_handlers:
             if file_handler.is_request_valid(json_request):
                 return file_handler
-        raise Exception('Data container does not provide a file matching the specified parameters.')
+        raise BadRequest('Data container does not provide a file matching the specified input_file_key.')
 
 
 class SSHFileHandler:
-    def __init__(self, input_file):
+    def __init__(self, input_file, input_file_key):
         self.host = input_file['ssh_host']
         self.username = input_file['ssh_username']
         self.password = input_file['ssh_password']
         self.file_dir = input_file['ssh_file_dir']
         self.file_name = input_file['ssh_file_name']
-        self.file_key = key_generator()
+        self.file_key = input_file_key
         self._local_file_name = str(uuid4())
         self._retrieve()
 
     def is_request_valid(self, json_request):
-        if not json_request['ssh_host'] == self.host:
-            return False
-        if not json_request['ssh_username'] == self.username:
-            return False
-        if not json_request['ssh_file_dir'] == self.file_dir:
-            return False
-        if not json_request['ssh_file_name'] == self.file_name:
-            return False
-        if not equal_keys(json_request['input_file_key'], self.file_key):
-            raise Exception('Value of parameter input_file_key is not valid for requested file.')
-        return True
+        if equal_keys(json_request['input_file_key'], self.file_key):
+            return True
+        return False
 
     def local_file_dir(self):
         return LOCAL_FILE_BASE_DIR
@@ -86,20 +76,18 @@ class SSHFileHandler:
 
 
 class HTTPFileHandler:
-    def __init__(self, input_file):
+    def __init__(self, input_file, input_file_key):
         self.url = input_file['http_url']
         self.auth = auth(input_file.get('http_auth'))
         self.ssl_verify = input_file.get('http_ssl_verify', True)
-        self.file_key = key_generator()
+        self.file_key = input_file_key
         self._local_file_name = str(uuid4())
         self._retrieve()
 
     def is_request_valid(self, json_request):
-        if not json_request['http_url'] == self.url:
-            return False
-        if not equal_keys(json_request['input_file_key'], self.file_key):
-            raise Exception('Value of parameter input_file_key is not valid for requested file.')
-        return True
+        if equal_keys(json_request['input_file_key'], self.file_key):
+            return True
+        return False
 
     def local_file_dir(self):
         return LOCAL_FILE_BASE_DIR
