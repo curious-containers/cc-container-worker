@@ -25,6 +25,12 @@ def main(settings, debug=False):
             config = toml.load(f)
             if debug:
                 callback_handler.config = config
+        local_result_files = config['main']['local_result_files']
+        local_input_files = config['main']['local_input_files']
+        application_command = config['main']['application_command']
+        assert type(local_result_files) is list
+        assert type(local_input_files) is list
+        assert type(application_command) is str
     except:
         description = 'Could not load TOML config file from path {}'.format(CONFIG_FILE_PATH)
         callback_handler.send_callback(
@@ -34,7 +40,7 @@ def main(settings, debug=False):
 
     result_files = settings['result_files']
 
-    if len(result_files) != len(config['main']['local_result_files']):
+    if len(result_files) != len(local_result_files):
         description = 'Number of local_result_files in config does not match result_files.'
         callback_handler.send_callback(
             callback_type='started', state='failed', description=description
@@ -42,7 +48,7 @@ def main(settings, debug=False):
         exit(4)
 
     try:
-        for local_result_file in config['main']['local_result_files']:
+        for local_result_file in local_result_files:
             if not os.path.exists(local_result_file['dir']):
                 os.makedirs(local_result_file['dir'])
     except:
@@ -76,20 +82,18 @@ def main(settings, debug=False):
 
     telemetry_data = None
     try:
-        command = config['main']['application_command']
-
         if settings.get('parameters'):
             if isinstance(settings['parameters'], dict):
-                command = '{} \'{}\''.format(command, json.dumps(settings['parameters']))
+                application_command = '{} \'{}\''.format(application_command, json.dumps(settings['parameters']))
             elif isinstance(settings['parameters'], list):
-                command += ''.join([' {}'.format(val) for val in settings['parameters']])
+                application_command += ''.join([' {}'.format(val) for val in settings['parameters']])
             else:
                 raise Exception('Type of parameters not valid: {}'.format(type(settings['parameters'])))
 
         sandbox = Sandbox(config=settings.get('sandbox'))
 
-        print(command)
-        sp = Popen(command, stdout=PIPE, stderr=PIPE, shell=True, preexec_fn=sandbox.enter)
+        print(application_command)
+        sp = Popen(application_command, stdout=PIPE, stderr=PIPE, shell=True, preexec_fn=sandbox.enter)
 
         tracing = Tracing(sp.pid, config=settings.get('tracing'))
         tracing.start()
@@ -112,7 +116,6 @@ def main(settings, debug=False):
         if std_err:
             telemetry_data['std_err'] = str(std_err)
         telemetry_data['return_code'] = return_code
-
     except:
         callback_handler.send_callback(
             callback_type='processed', state='failed', description='Processing failed.', exception=format_exc()
