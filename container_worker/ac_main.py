@@ -5,7 +5,7 @@ from subprocess import Popen, PIPE
 from traceback import format_exc
 from threading import Thread
 
-from container_worker.data import ac_download_files, ac_upload_results
+from container_worker.data import ac_download, ac_upload
 from container_worker.ac_telemetry import Telemetry
 from container_worker.ac_tracing import Tracing
 from container_worker.ac_sandbox import Sandbox
@@ -63,7 +63,7 @@ def main(settings, debug=False):
         exit(6)
 
     try:
-        ac_download_files(input_files, config['main']['local_input_files'])
+        ac_download(input_files, config['main']['local_input_files'])
     except:
         description = 'Could not retrieve input files.'
         callback_handler.send_callback(
@@ -107,39 +107,43 @@ def main(settings, debug=False):
         tracing_data = tracing.result()
         if tracing_data:
             telemetry_data['tracing'] = tracing_data
+        if std_out:
+            telemetry_data['std_out'] = str(std_out)
+        if std_err:
+            telemetry_data['std_err'] = str(std_err)
+        telemetry_data['return_code'] = return_code
+
     except:
-        description = 'Processing of application command failed.'
         callback_handler.send_callback(
-            callback_type='processed', state='failed', description=description, exception=format_exc()
+            callback_type='processed', state='failed', description='Processing failed.', exception=format_exc()
         )
         exit(8)
 
-    if return_code != 0:
-        description = 'Processing of application command returns error code {}.'.format(return_code)
-        callback_handler.send_callback(
-            callback_type='processed', state='failed', description=description, exception=str(std_err)
-        )
-        exit(9)
-
     description = 'Processing succeeded.'
+    state = 'success'
+    if return_code != 0:
+        description = 'Processing failed.'
+        state = 'failed'
+
     callback_handler.send_callback(
         callback_type='processed',
-        state='success',
+        state=state,
         description=description,
         telemetry=telemetry_data,
     )
 
+    if return_code != 0:
+        exit(9)
+
     try:
-        ac_upload_results(result_files, config['main']['local_result_files'])
+        ac_upload(result_files, config['main']['local_result_files'])
     except:
         description = 'Could not send result files.'
         callback_handler.send_callback(
-            callback_type='results_sent', state='failed', description=description,
-            exception=format_exc()
+            callback_type='results_sent', state='failed', description=description, exception=format_exc()
         )
         exit(10)
 
-    description = 'Result files sent.'
     callback_handler.send_callback(
-        callback_type='results_sent', state='success', description=description
+        callback_type='results_sent', state='success', description='Result files sent.'
     )

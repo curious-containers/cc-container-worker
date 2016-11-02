@@ -45,7 +45,7 @@ class DCFileManager:
         return self._files[input_file_key]
 
 
-def ac_download_files(input_files, local_input_files):
+def ac_download(input_files, local_input_files):
     connectors = _get_functions([downloaders, custom_downloaders])
     files = []
     for input_file, local_input_file in zip(input_files, local_input_files):
@@ -57,7 +57,7 @@ def ac_download_files(input_files, local_input_files):
         connector(file.connector_access, file.local_file_dir, file.local_file_name)
 
 
-def ac_upload_results(result_files, local_result_files):
+def ac_upload(result_files, local_result_files):
     connectors = _get_functions([uploaders, custom_uploaders])
     for result_file, local_result_file in zip(result_files, local_result_files):
         if not result_file:
