@@ -100,8 +100,8 @@ class Tracing:
                     record = {
                         'pid': pid,
                         'filename': filename,
-                        'is_directory': entry.is_dir,
-                        'exists': entry.exists,
+                        'is_directory': entry.is_dir or False,
+                        'exists': entry.exists or False,
                         'syscall': entry.name,
                         'access_time': entry.timestamp,
                         'syscall_result': entry.result
