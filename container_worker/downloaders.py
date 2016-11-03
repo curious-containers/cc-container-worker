@@ -11,7 +11,7 @@ def http(connector_access, local_file_dir, local_file_name):
 
     r = requests.get(
         connector_access['url'],
-        auth=helper.auth(connector_access.get('http_auth')),
+        auth=helper.auth(connector_access.get('auth')),
         verify=connector_access.get('ssl_verify', True),
         stream=True
     )
