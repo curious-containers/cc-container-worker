@@ -95,8 +95,8 @@ class Tracing:
         for pid in tracing_records.keys():
             p = tracing_records[pid]
             for entry in p.get_log():
-                filename = entry.filename or 'UNKNOWN'
                 if type(entry) == FileAccessRecord:
+                    filename = entry.filename or 'UNKNOWN'
                     record = {
                         'pid': pid,
                         'filename': filename,
