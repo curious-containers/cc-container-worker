@@ -34,6 +34,10 @@ def main(settings):
     @app.route('/<key>', methods=['GET'])
     def root(key):
         file = file_manager.get_file(key)
-        return send_from_directory(file.local_file_dir, file.local_file_name, as_attachment=True)
+        return send_from_directory(
+            file['local_input_file']['dir'],
+            file['local_input_file']['name'],
+            as_attachment=True
+        )
 
     app.run(host='0.0.0.0', port=80)

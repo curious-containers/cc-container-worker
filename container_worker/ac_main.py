@@ -47,35 +47,31 @@ def main(settings, debug=False):
         )
         exit(4)
 
-    try:
-        for local_result_file in local_result_files:
+    for local_result_file in local_result_files:
+        try:
             if not os.path.exists(local_result_file['dir']):
                 os.makedirs(local_result_file['dir'])
-    except:
-        description = 'Could not create directories for result files.'
-        callback_handler.send_callback(
-            callback_type='started', state='failed', description=description, exception=format_exc()
-        )
-        exit(5)
+        except:
+            pass
 
     description = 'Container started.'
     response = callback_handler.send_callback(callback_type='started', state='success', description=description)
 
     input_files = response['input_files']
 
-    if len(input_files) != len(config['main']['local_input_files']):
+    if len(input_files) != len(local_input_files):
         description = 'Number of local_input_files in config does not match input_files.'
         callback_handler.send_callback(callback_type='files_retrieved', state='failed', description=description)
-        exit(6)
+        exit(5)
 
     try:
-        ac_download(input_files, config['main']['local_input_files'])
+        ac_download(input_files, local_input_files)
     except:
         description = 'Could not retrieve input files.'
         callback_handler.send_callback(
             callback_type='files_retrieved', state='failed', description=description, exception=format_exc()
         )
-        exit(7)
+        exit(6)
 
     description = 'Input files retrieved.'
     callback_handler.send_callback(callback_type='files_retrieved', state='success', description=description)
@@ -139,7 +135,7 @@ def main(settings, debug=False):
         exit(9)
 
     try:
-        ac_upload(result_files, config['main']['local_result_files'])
+        ac_upload(result_files, local_result_files)
     except:
         description = 'Could not send result files.'
         callback_handler.send_callback(

@@ -6,7 +6,17 @@ from paramiko import SSHClient, AutoAddPolicy
 from container_worker import helper
 
 
-def http(connector_access, local_file_dir, local_file_name):
+def http(connector_access, local_result_file):
+    local_file_dir = local_result_file['dir']
+    local_file_name = local_result_file['name']
+    local_file_path = os.path.join(local_file_dir, local_file_name)
+
+    if not os.path.isfile(local_file_path):
+        if local_result_file.get('optional'):
+            return
+        else:
+            raise Exception('Result file does not exist and is not optional: {}'.format(local_file_path))
+
     http_method = connector_access['method'].lower()
     if http_method == 'put':
         method_func = requests.put
@@ -27,8 +37,18 @@ def http(connector_access, local_file_dir, local_file_name):
         r.raise_for_status()
 
 
-def json(connector_access, local_file_dir, local_file_name):
-    with open(os.path.join(local_file_dir, local_file_name)) as f:
+def json(connector_access, local_result_file):
+    local_file_dir = local_result_file['dir']
+    local_file_name = local_result_file['name']
+    local_file_path = os.path.join(local_file_dir, local_file_name)
+
+    if not os.path.isfile(local_file_path):
+        if local_result_file.get('optional'):
+            return
+        else:
+            raise Exception('Result file does not exist and is not optional: {}'.format(local_file_path))
+
+    with open(local_file_path) as f:
         data = json_module.load(f)
 
     r = requests.post(
@@ -40,7 +60,17 @@ def json(connector_access, local_file_dir, local_file_name):
     r.raise_for_status()
 
 
-def ssh(connector_access, local_file_dir, local_file_name):
+def ssh(connector_access, local_result_file):
+    local_file_dir = local_result_file['dir']
+    local_file_name = local_result_file['name']
+    local_file_path = os.path.join(local_file_dir, local_file_name)
+
+    if not os.path.isfile(local_file_path):
+        if local_result_file.get('optional'):
+            return
+        else:
+            raise Exception('Result file does not exist and is not optional: {}'.format(local_file_path))
+
     with SSHClient() as client:
         client.set_missing_host_key_policy(AutoAddPolicy())
         client.connect(

@@ -5,7 +5,10 @@ from paramiko import SSHClient, AutoAddPolicy
 from container_worker import helper
 
 
-def http(connector_access, local_file_dir, local_file_name):
+def http(connector_access, local_input_file):
+    local_file_dir = local_input_file['dir']
+    local_file_name = local_input_file['name']
+
     if not os.path.exists(local_file_dir):
         os.makedirs(local_file_dir)
 
@@ -25,7 +28,10 @@ def http(connector_access, local_file_dir, local_file_name):
                 f.write(chunk)
 
 
-def ssh(connector_access, local_file_dir, local_file_name):
+def ssh(connector_access, local_input_file):
+    local_file_dir = local_input_file['dir']
+    local_file_name = local_input_file['name']
+
     if not os.path.exists(local_file_dir):
         os.makedirs(local_file_dir)
 
