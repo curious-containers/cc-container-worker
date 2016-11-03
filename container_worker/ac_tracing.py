@@ -84,7 +84,7 @@ class Tracing:
         for pid in tracing_records.keys():
             p = tracing_records[pid]
             for entry in p.get_log():
-                if type(entry) == FileAccessRecord:
+                if type(entry) == FileAccessRecord and entry.filename:
                     result.add(entry.filename)
 
         return list(result)
@@ -95,10 +95,11 @@ class Tracing:
         for pid in tracing_records.keys():
             p = tracing_records[pid]
             for entry in p.get_log():
+                filename = entry.filename or 'UNKNOWN'
                 if type(entry) == FileAccessRecord:
                     record = {
                         'pid': pid,
-                        'filename': entry.filename,
+                        'filename': filename,
                         'is_directory': entry.is_dir,
                         'exists': entry.exists,
                         'syscall': entry.name,
