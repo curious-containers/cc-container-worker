@@ -61,11 +61,12 @@ class Telemetry:
 def _file_sizes(file_list):
     results = []
     for f in file_list:
+        file_size = None
         try:
             file_path = join(f['dir'], f['name'])
             if isfile(file_path):
                 file_size = ceil(getsize(file_path) / (1024 * 1024))
-                results.append(file_size)
         except:
-            results.append(None)
+            pass
+        results.append(file_size)
     return results
