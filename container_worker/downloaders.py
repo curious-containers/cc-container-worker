@@ -26,6 +26,7 @@ def http(connector_access, local_input_file):
         for chunk in r.iter_content(chunk_size=1024):
             if chunk:
                 f.write(chunk)
+    r.raise_for_status()
 
 
 def ssh(connector_access, local_input_file):
