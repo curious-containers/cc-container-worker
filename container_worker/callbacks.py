@@ -1,5 +1,5 @@
 import requests
-from json import dumps, loads
+import json
 
 
 STATES = [
@@ -75,8 +75,7 @@ class CallbackHandler:
 
         r = requests.post(
             self.callback_url,
-            data=dumps(self.callback),
-            headers={'Content-type': 'application/json', 'Accept': 'text/plain'}
+            json=self.callback,
         )
 
         r.raise_for_status()
@@ -114,7 +113,7 @@ class DebugCallbackHandler:
         if callback_type == 'started' and state == 'success':
             # Emulate input file retrieval
             if len(self.config['main']['local_result_files']) > 0:
-                result['input_files'] = loads(input("Paste JSON input file task config here: "))
+                result['input_files'] = json.loads(input("Paste JSON input file task config here: "))
             else:
                 result['input_files'] = []
 
