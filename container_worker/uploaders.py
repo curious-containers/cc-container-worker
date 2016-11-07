@@ -25,8 +25,6 @@ def http(connector_access, local_result_file):
     else:
         raise Exception('HTTP method not valid: {}'.format(connector_access['method']))
 
-    local_file_path = os.path.join(local_file_dir, local_file_name)
-
     with open(local_file_path, 'rb') as f:
         r = method_func(
             connector_access['url'],
