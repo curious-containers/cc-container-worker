@@ -15,5 +15,7 @@ if settings['container_type'] == 'data':
     dc_main.main(settings)
 elif settings['container_type'] == 'application':
     ac_main.main(settings, debug)
+elif settings['container_type'] == 'inspection':
+    print('inspection')
 else:
     exit(42)
