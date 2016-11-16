@@ -1,21 +1,17 @@
 import requests
 import os
-import json as json_module
-from paramiko import SSHClient, AutoAddPolicy
+import json
+import pymongo
+import gridfs
+import paramiko
+from bson.objectid import ObjectId
 
 from container_worker import helper
 
 
-def http(connector_access, local_result_file):
-    local_file_dir = local_result_file['dir']
-    local_file_name = local_result_file['name']
-    local_file_path = os.path.join(local_file_dir, local_file_name)
-
-    if not os.path.isfile(local_file_path):
-        if local_result_file.get('optional'):
-            return
-        else:
-            raise Exception('Result file does not exist and is not optional: {}'.format(local_file_path))
+@helper.skip_optional
+def http(connector_access, local_result_file, metadata):
+    local_file_path = os.path.join(local_result_file['dir'], local_result_file['name'])
 
     http_method = connector_access['method'].lower()
     if http_method == 'put':
@@ -35,19 +31,16 @@ def http(connector_access, local_result_file):
         r.raise_for_status()
 
 
-def json(connector_access, local_result_file):
-    local_file_dir = local_result_file['dir']
-    local_file_name = local_result_file['name']
-    local_file_path = os.path.join(local_file_dir, local_file_name)
-
-    if not os.path.isfile(local_file_path):
-        if local_result_file.get('optional'):
-            return
-        else:
-            raise Exception('Result file does not exist and is not optional: {}'.format(local_file_path))
+@helper.skip_optional
+def http_json(connector_access, local_result_file, metadata):
+    local_file_path = os.path.join(local_result_file['dir'], local_result_file['name'])
 
     with open(local_file_path) as f:
-        data = json_module.load(f)
+        data = json.load(f)
+
+    if metadata:
+        for key, val in metadata.items():
+            data[key] = val
 
     r = requests.post(
         connector_access['url'],
@@ -58,19 +51,70 @@ def json(connector_access, local_result_file):
     r.raise_for_status()
 
 
-def ssh(connector_access, local_result_file):
-    local_file_dir = local_result_file['dir']
-    local_file_name = local_result_file['name']
-    local_file_path = os.path.join(local_file_dir, local_file_name)
+@helper.skip_optional
+def mongodb_json(connector_access, local_result_file, metadata):
+    local_file_path = os.path.join(local_result_file['dir'], local_result_file['name'])
 
-    if not os.path.isfile(local_file_path):
-        if local_result_file.get('optional'):
-            return
-        else:
-            raise Exception('Result file does not exist and is not optional: {}'.format(local_file_path))
+    with open(local_file_path) as f:
+        data = json.load(f)
 
-    with SSHClient() as client:
-        client.set_missing_host_key_policy(AutoAddPolicy())
+    if metadata:
+        for key, val in metadata.items():
+            try:
+                data[key] = [ObjectId(val)]
+            except:
+                data[key] = val
+
+    client = pymongo.MongoClient('mongodb://{}:{}@{}/{}'.format(
+        connector_access['username'],
+        connector_access['password'],
+        connector_access['host'],
+        connector_access['dbname']
+    ))
+    db = client[connector_access['dbname']]
+    db[connector_access['collection']].insert_one(data)
+    client.close()
+
+
+@helper.skip_optional
+def mongodb_gridfs(connector_access, local_result_file, metadata):
+    local_file_path = os.path.join(local_result_file['dir'], local_result_file['name'])
+
+    client = pymongo.MongoClient('mongodb://{}:{}@{}/{}'.format(
+        connector_access['username'],
+        connector_access['password'],
+        connector_access['host'],
+        connector_access['dbname']
+    ))
+    db = client[connector_access['dbname']]
+    fs = gridfs.GridFSBucket(db)
+
+    md = connector_access.get('metadata')
+    if metadata:
+        if not md:
+            md = {}
+        for key, val in metadata.items():
+            try:
+                md[key] = [ObjectId(val)]
+            except:
+                md[key] = val
+
+    with open(local_file_path, 'wb') as f:
+        fs.upload_from_stream(
+            connector_access['file_name'],
+            f,
+            chunk_size_bytes=1024,
+            metadata=md
+        )
+    db.close()
+
+
+@helper.skip_optional
+def ssh(connector_access, local_result_file, metadata):
+    local_file_path = os.path.join(local_result_file['dir'], local_result_file['name'])
+
+    with paramiko.SSHClient() as client:
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         client.connect(
             connector_access['host'],
             username=connector_access['username'],
@@ -79,7 +123,7 @@ def ssh(connector_access, local_result_file):
         with client.open_sftp() as sftp:
             _ssh_mkdir(sftp, connector_access['file_dir'])
             sftp.put(
-                os.path.join(local_file_dir, local_file_name),
+                local_file_path,
                 os.path.join(connector_access['file_dir'], connector_access['file_name'])
             )
 

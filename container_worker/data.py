@@ -41,10 +41,14 @@ def ac_download(input_files, local_input_files):
         connector(input_file['connector_access'], local_input_file)
 
 
-def ac_upload(result_files, local_result_files):
+def ac_upload(result_files, local_result_files, meta_data):
     connectors = _get_functions([uploaders, custom_uploaders])
     for result_file, local_result_file in zip(result_files, local_result_files):
         if not result_file:
             continue
         connector = connectors[result_file['connector_type']]
-        connector(result_file['connector_access'], local_result_file)
+        connector(
+            result_file['connector_access'],
+            local_result_file,
+            meta_data if result_file.get('enrich_metadata') else None
+        )

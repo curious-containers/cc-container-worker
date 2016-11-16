@@ -13,6 +13,11 @@ from container_worker.callbacks import CallbackHandler, DebugCallbackHandler
 
 CONFIG_FILE_PATH = '/opt/config.toml'
 
+LOCAL_TRACING_FILE = {
+    'dir': '/var/tmp/cc-tracing',
+    'name': 'data.json'
+}
+
 
 def main(settings, debug=False):
     if debug:
@@ -77,6 +82,7 @@ def main(settings, debug=False):
     callback_handler.send_callback(callback_type='files_retrieved', state='success', description=description)
 
     telemetry_data = None
+    tracing_data = None
     try:
         if settings.get('parameters'):
             if isinstance(settings['parameters'], dict):
@@ -102,16 +108,16 @@ def main(settings, debug=False):
         tracing.finish()
         return_code = sp.returncode
 
-        # Collect telemetry
+        # Collect telemetry data
         telemetry_data = telemetry.result()
-        tracing_data = tracing.result()
-        if tracing_data:
-            telemetry_data['tracing'] = tracing_data
         if std_out:
             telemetry_data['std_out'] = str(std_out)
         if std_err:
             telemetry_data['std_err'] = str(std_err)
         telemetry_data['return_code'] = return_code
+
+        # Collect tracing data
+        tracing_data = tracing.result()
     except:
         callback_handler.send_callback(
             callback_type='processed', state='failed', description='Processing failed.', exception=format_exc()
@@ -120,14 +126,40 @@ def main(settings, debug=False):
 
     description = 'Processing succeeded.'
     state = 'success'
+    exception = None
+
     if return_code != 0:
         description = 'Processing failed.'
         state = 'failed'
+
+    try:
+        if tracing_data:
+            tracing_file = settings['tracing'].get('tracing_file')
+            if tracing_file:
+                if not os.path.exists(LOCAL_TRACING_FILE['dir']):
+                    os.makedirs(LOCAL_TRACING_FILE['dir'])
+                local_tracing_file_path = os.path.join(LOCAL_TRACING_FILE['dir'], LOCAL_TRACING_FILE['name'])
+                with open(local_tracing_file_path, 'w') as f:
+                    json.dump(tracing_data, f)
+            meta_data = {'application_container_id': settings['container_id']}
+            ac_upload(
+                [tracing_file],
+                [LOCAL_TRACING_FILE],
+                meta_data
+            )
+    except:
+        if return_code != 0:
+            description = 'Processing failed and tracing file upload failed.'
+        else:
+            description = 'Tracing file upload failed.'
+        state = 'failed'
+        exception = format_exc()
 
     callback_handler.send_callback(
         callback_type='processed',
         state=state,
         description=description,
+        exception=exception,
         telemetry=telemetry_data,
     )
 
@@ -135,7 +167,8 @@ def main(settings, debug=False):
         exit(9)
 
     try:
-        ac_upload(result_files, local_result_files)
+        additional_metadata = {'application_container_id': settings['container_id']}
+        ac_upload(result_files, local_result_files, additional_metadata)
     except:
         description = 'Could not send result files.'
         callback_handler.send_callback(
