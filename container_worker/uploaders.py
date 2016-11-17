@@ -4,6 +4,7 @@ import json
 import pymongo
 import gridfs
 import paramiko
+import uuid
 from bson.objectid import ObjectId
 
 from container_worker import helper
@@ -89,11 +90,11 @@ def mongodb_gridfs(connector_access, local_result_file, metadata):
             except:
                 md[key] = val
 
-    with open(local_file_path, 'wb') as f:
+    with open(local_file_path, 'rb') as f:
         fs.upload_from_stream(
-            connector_access['file_name'],
+            connector_access.get('file_name', str(uuid.uuid4())),
             f,
-            chunk_size_bytes=1024,
+            chunk_size_bytes=4096,
             metadata=md
         )
     client.close()

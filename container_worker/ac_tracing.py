@@ -1,16 +1,18 @@
 from threading import Lock
+import signal
+import posix
 from process_tracing.tracing import Tracing as T
 from process_tracing.recording import FileAccessRecord, SyscallRecord
 
 
 class Tracing:
     def __init__(self, process, config=None):
+        # Create tracer
+        self.tracer = T(process, stop=True)
+
         self.process = process
         self.config = config
         self.lock = Lock()
-
-        # Create tracer
-        self.tracer = T(self.process, stop=False)
 
     def start(self):
         # Configure the tracing instance
@@ -37,6 +39,8 @@ class Tracing:
         # Start the tracing process (if tracing is requested)
         if self.tracer.runtime_tracing or self.tracer.file_access_tracing or self.tracer.syscall_tracing:
             self.tracer.start()
+        else:
+            posix.kill(self.process, signal.SIGCONT)
 
     def finish(self):
         if self.tracer.is_running():

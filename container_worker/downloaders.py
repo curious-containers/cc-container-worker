@@ -23,7 +23,7 @@ def http(connector_access, local_input_file):
     local_file_path = os.path.join(local_file_dir, local_file_name)
 
     with open(local_file_path, 'wb') as f:
-        for chunk in r.iter_content(chunk_size=1024):
+        for chunk in r.iter_content(chunk_size=4096):
             if chunk:
                 f.write(chunk)
     r.raise_for_status()
