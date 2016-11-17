@@ -65,12 +65,7 @@ def mongodb_json(connector_access, local_result_file, metadata):
             except:
                 data[key] = val
 
-    client = pymongo.MongoClient('mongodb://{}:{}@{}/{}'.format(
-        connector_access['username'],
-        connector_access['password'],
-        connector_access['host'],
-        connector_access['dbname']
-    ))
+    client = _mongodb_client(connector_access)
     db = client[connector_access['dbname']]
     db[connector_access['collection']].insert_one(data)
     client.close()
@@ -80,12 +75,7 @@ def mongodb_json(connector_access, local_result_file, metadata):
 def mongodb_gridfs(connector_access, local_result_file, metadata):
     local_file_path = os.path.join(local_result_file['dir'], local_result_file['name'])
 
-    client = pymongo.MongoClient('mongodb://{}:{}@{}/{}'.format(
-        connector_access['username'],
-        connector_access['password'],
-        connector_access['host'],
-        connector_access['dbname']
-    ))
+    client = _mongodb_client(connector_access)
     db = client[connector_access['dbname']]
     fs = gridfs.GridFSBucket(db)
 
@@ -106,7 +96,29 @@ def mongodb_gridfs(connector_access, local_result_file, metadata):
             chunk_size_bytes=1024,
             metadata=md
         )
-    db.close()
+    client.close()
+
+
+def _mongodb_client(connector_access):
+    url_parameters = ''
+    enable_ssl = connector_access.get('enable_ssl', True)
+    ssl_verify = connector_access.get('ssl_verify', True)
+    ssl_ca_cert_path = connector_access.get('ssl_ca_cert_path')
+    if enable_ssl:
+        url_parameters = '?ssl=true'
+        if ssl_ca_cert_path:
+            url_parameters = '{}&ssl_ca_certs={}'.format(url_parameters, ssl_ca_cert_path)
+        elif not ssl_verify:
+            url_parameters = '{}&ssl_cert_reqs=CERT_NONE'.format(url_parameters)
+
+    return pymongo.MongoClient('mongodb://{}:{}@{}:{}/{}{}'.format(
+        connector_access['username'],
+        connector_access['password'],
+        connector_access['host'],
+        connector_access.get('port', 27017),
+        connector_access['dbname'],
+        url_parameters
+    ))
 
 
 @helper.skip_optional
