@@ -17,7 +17,7 @@ CONFIG_FILE_PATH = '/opt/config.toml'
 
 LOCAL_TRACING_FILE = {
     'dir': '/var/tmp/cc-tracing',
-    'name': 'data.json'
+    'name': 'data.csv'
 }
 
 
@@ -104,7 +104,11 @@ def main(settings, debug=False):
         print(application_command)
         sp = Popen(application_command, stdout=PIPE, stderr=PIPE, shell=True, preexec_fn=sandbox.enter)
 
-        tracing = Tracing(sp.pid, config=settings.get('tracing'))
+        if not os.path.exists(LOCAL_TRACING_FILE['dir']):
+            os.makedirs(LOCAL_TRACING_FILE['dir'])
+
+        local_tracing_file_path = os.path.join(LOCAL_TRACING_FILE['dir'], LOCAL_TRACING_FILE['name'])
+        tracing = Tracing(sp.pid, config=settings.get('tracing'), outfile=local_tracing_file_path)
         tracing.start()
 
         telemetry = Telemetry(sp, config=config)
@@ -122,9 +126,6 @@ def main(settings, debug=False):
         if std_err:
             telemetry_data['std_err'] = str(std_err)
         telemetry_data['return_code'] = return_code
-
-        # Collect tracing data
-        tracing_data = tracing.result()
     except:
         callback_handler.send_callback(
             callback_type='processed', state='failed', description='Processing failed.', exception=format_exc()
@@ -140,19 +141,9 @@ def main(settings, debug=False):
         state = 'failed'
 
     try:
-        if tracing_data:
-            tracing_file = settings['tracing'].get('tracing_file')
-            if tracing_file:
-                if not os.path.exists(LOCAL_TRACING_FILE['dir']):
-                    os.makedirs(LOCAL_TRACING_FILE['dir'])
-                local_tracing_file_path = os.path.join(LOCAL_TRACING_FILE['dir'], LOCAL_TRACING_FILE['name'])
-                with open(local_tracing_file_path, 'w') as f:
-                    json.dump(tracing_data, f)
-                ac_upload(
-                    [tracing_file],
-                    [LOCAL_TRACING_FILE],
-                    meta_data
-                )
+        tracing_file = settings['tracing'].get('tracing_file')
+        if os.path.exists(local_tracing_file_path) and tracing_file:
+            ac_upload([tracing_file], [LOCAL_TRACING_FILE], meta_data)
     except:
         if return_code != 0:
             description = 'Processing failed and tracing file upload failed.'
