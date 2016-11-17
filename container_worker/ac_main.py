@@ -102,7 +102,7 @@ def main(settings, debug=False):
         sandbox = Sandbox(config=settings.get('sandbox'))
 
         print(application_command)
-        sp = Popen(application_command, stdout=PIPE, stderr=PIPE, shell=True, preexec_fn=process_preexec(sandbox))
+        sp = Popen(application_command, stdout=PIPE, stderr=PIPE, shell=True, preexec_fn=sandbox.enter)
 
         tracing = Tracing(sp.pid, config=settings.get('tracing'))
         tracing.start()
@@ -184,13 +184,3 @@ def main(settings, debug=False):
     callback_handler.send_callback(
         callback_type='results_sent', state='success', description='Result files sent.'
     )
-
-
-def process_preexec(sandbox):
-    def runner():
-        # Halt the process immediatly
-        #posix.kill(os.getpid(), signal.SIGSTOP)
-
-        sandbox.enter()
-
-    return runner
