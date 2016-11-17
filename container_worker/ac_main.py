@@ -15,7 +15,8 @@ CONFIG_FILE_PATH = '/opt/config.toml'
 
 LOCAL_TRACING_FILE = {
     'dir': '/var/tmp/cc-tracing',
-    'name': 'data.csv'
+    'name': 'data.csv',
+    'optional': True
 }
 
 
@@ -87,7 +88,6 @@ def main(settings, debug=False):
     callback_handler.send_callback(callback_type='files_retrieved', state='success', description=description)
 
     telemetry_data = None
-    tracing_data = None
     try:
         if settings.get('parameters'):
             if isinstance(settings['parameters'], dict):
@@ -99,13 +99,14 @@ def main(settings, debug=False):
 
         sandbox = Sandbox(config=settings.get('sandbox'))
 
-        print(application_command)
-        sp = Popen(application_command, stdout=PIPE, stderr=PIPE, shell=True, preexec_fn=sandbox.enter)
-
         if not os.path.exists(LOCAL_TRACING_FILE['dir']):
             os.makedirs(LOCAL_TRACING_FILE['dir'])
 
         local_tracing_file_path = os.path.join(LOCAL_TRACING_FILE['dir'], LOCAL_TRACING_FILE['name'])
+
+        print(application_command)
+        sp = Popen(application_command, stdout=PIPE, stderr=PIPE, shell=True, preexec_fn=sandbox.enter)
+
         tracing = Tracing(sp.pid, config=settings.get('tracing'), outfile=local_tracing_file_path)
         tracing.start()
 
@@ -139,8 +140,8 @@ def main(settings, debug=False):
         state = 'failed'
 
     try:
-        tracing_file = settings['tracing'].get('tracing_file')
-        if os.path.exists(local_tracing_file_path) and tracing_file:
+        if settings.get('tracing'):
+            tracing_file = settings['tracing'].get('tracing_file')
             ac_upload([tracing_file], [LOCAL_TRACING_FILE], meta_data)
     except:
         if return_code != 0:
