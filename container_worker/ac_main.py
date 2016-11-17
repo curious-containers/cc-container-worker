@@ -143,12 +143,12 @@ def main(settings, debug=False):
                 local_tracing_file_path = os.path.join(LOCAL_TRACING_FILE['dir'], LOCAL_TRACING_FILE['name'])
                 with open(local_tracing_file_path, 'w') as f:
                     json.dump(tracing_data, f)
-            meta_data = {'application_container_id': settings['container_id']}
-            ac_upload(
-                [tracing_file],
-                [LOCAL_TRACING_FILE],
-                meta_data
-            )
+                meta_data = {'application_container_id': settings['container_id']}
+                ac_upload(
+                    [tracing_file],
+                    [LOCAL_TRACING_FILE],
+                    meta_data
+                )
     except:
         if return_code != 0:
             description = 'Processing failed and tracing file upload failed.'
