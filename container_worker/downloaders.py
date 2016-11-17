@@ -43,6 +43,7 @@ def ssh(connector_access, local_input_file):
         client.set_missing_host_key_policy(AutoAddPolicy())
         client.connect(
             connector_access['host'],
+            port=connector_access.get('port', 22),
             username=connector_access['username'],
             password=connector_access['password']
         )
