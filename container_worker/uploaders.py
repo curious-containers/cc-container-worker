@@ -67,7 +67,7 @@ def mongodb_json(connector_access, local_result_file, meta_data):
                 data[key] = val
 
     client = _mongodb_client(connector_access)
-    db = client[connector_access['dbname']]
+    db = client[connector_access['db']]
     db[connector_access['collection']].insert_one(data)
     client.close()
 
@@ -77,7 +77,7 @@ def mongodb_gridfs(connector_access, local_result_file, meta_data):
     local_file_path = os.path.join(local_result_file['dir'], local_result_file['name'])
 
     client = _mongodb_client(connector_access)
-    db = client[connector_access['dbname']]
+    db = client[connector_access['db']]
     fs = gridfs.GridFSBucket(db)
 
     md = connector_access.get('metadata')
