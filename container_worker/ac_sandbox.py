@@ -48,7 +48,7 @@ class Sandbox:
                 resource.setrlimit(option, (limit, limit))
 
     @staticmethod
-    def _load_sandbox(sandbox_config, termination_exit_code):
+    def _load_seccomp(sandbox_config, termination_exit_code):
         # Check if sandboxing is requested
         mode = sandbox_config.get('mode', Sandbox.SANDBOX_MODE_DEFAULT)
         if mode == Sandbox.SANDBOX_MODE_DISABLED:
@@ -67,14 +67,14 @@ class Sandbox:
 
         # Process termination and return on signal are always allowed
         if mode == Sandbox.SANDBOX_MODE_WHITELIST:
-            seccomp_filter.add_rule("exit", seccomplite.ALLOW)
-            seccomp_filter.add_rule("exit_group", seccomplite.ALLOW)
-            seccomp_filter.add_rule("rt_sigreturn", seccomplite.ALLOW)
+            seccomp_filter.add_rule(seccomplite.ALLOW, "exit", )
+            seccomp_filter.add_rule(seccomplite.ALLOW, "exit_group")
+            seccomp_filter.add_rule(seccomplite.ALLOW, "rt_sigreturn")
 
         for filter_item_config in sandbox_config['filter_items']:
             syscall = filter_item_config['syscall']
             conditions = Sandbox._make_conditions(filter_item_config)
-            seccomp_filter.add_rule(syscall, rule_action, conditions)
+            seccomp_filter.add_rule(rule_action, syscall, conditions)
 
         seccomp_filter.load()
 
