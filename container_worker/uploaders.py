@@ -11,7 +11,7 @@ from container_worker import helper
 
 
 @helper.skip_optional
-def http(connector_access, local_result_file, metadata):
+def http(connector_access, local_result_file, meta_data):
     local_file_path = os.path.join(local_result_file['dir'], local_result_file['name'])
 
     http_method = connector_access['method'].lower()
@@ -33,14 +33,14 @@ def http(connector_access, local_result_file, metadata):
 
 
 @helper.skip_optional
-def http_json(connector_access, local_result_file, metadata):
+def http_json(connector_access, local_result_file, meta_data):
     local_file_path = os.path.join(local_result_file['dir'], local_result_file['name'])
 
     with open(local_file_path) as f:
         data = json.load(f)
 
-    if metadata:
-        for key, val in metadata.items():
+    if meta_data:
+        for key, val in meta_data.items():
             data[key] = val
 
     r = requests.post(
@@ -53,14 +53,14 @@ def http_json(connector_access, local_result_file, metadata):
 
 
 @helper.skip_optional
-def mongodb_json(connector_access, local_result_file, metadata):
+def mongodb_json(connector_access, local_result_file, meta_data):
     local_file_path = os.path.join(local_result_file['dir'], local_result_file['name'])
 
     with open(local_file_path) as f:
         data = json.load(f)
 
-    if metadata:
-        for key, val in metadata.items():
+    if meta_data:
+        for key, val in meta_data.items():
             try:
                 data[key] = [ObjectId(val)]
             except:
@@ -73,7 +73,7 @@ def mongodb_json(connector_access, local_result_file, metadata):
 
 
 @helper.skip_optional
-def mongodb_gridfs(connector_access, local_result_file, metadata):
+def mongodb_gridfs(connector_access, local_result_file, meta_data):
     local_file_path = os.path.join(local_result_file['dir'], local_result_file['name'])
 
     client = _mongodb_client(connector_access)
@@ -81,10 +81,10 @@ def mongodb_gridfs(connector_access, local_result_file, metadata):
     fs = gridfs.GridFSBucket(db)
 
     md = connector_access.get('metadata')
-    if metadata:
+    if meta_data:
         if not md:
             md = {}
-        for key, val in metadata.items():
+        for key, val in meta_data.items():
             try:
                 md[key] = [ObjectId(val)]
             except:
@@ -117,13 +117,13 @@ def _mongodb_client(connector_access):
         connector_access['password'],
         connector_access['host'],
         connector_access.get('port', 27017),
-        connector_access['dbname'],
+        connector_access['db'],
         url_parameters
     ))
 
 
 @helper.skip_optional
-def ssh(connector_access, local_result_file, metadata):
+def ssh(connector_access, local_result_file, meta_data):
     local_file_path = os.path.join(local_result_file['dir'], local_result_file['name'])
 
     with paramiko.SSHClient() as client:

@@ -50,5 +50,5 @@ def ac_upload(result_files, local_result_files, meta_data):
         connector(
             result_file['connector_access'],
             local_result_file,
-            meta_data if result_file.get('enrich_metadata') else None
+            meta_data if result_file.get('add_meta_data') else None
         )

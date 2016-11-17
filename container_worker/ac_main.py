@@ -45,6 +45,11 @@ def main(settings, debug=False):
         )
         exit(3)
 
+    meta_data = {
+        'application_container_id': settings['container_id'],
+        'task_id': settings['task_id']
+    }
+
     result_files = settings['result_files']
 
     if len(result_files) != len(local_result_files):
@@ -143,7 +148,6 @@ def main(settings, debug=False):
                 local_tracing_file_path = os.path.join(LOCAL_TRACING_FILE['dir'], LOCAL_TRACING_FILE['name'])
                 with open(local_tracing_file_path, 'w') as f:
                     json.dump(tracing_data, f)
-                meta_data = {'application_container_id': settings['container_id']}
                 ac_upload(
                     [tracing_file],
                     [LOCAL_TRACING_FILE],
@@ -169,8 +173,7 @@ def main(settings, debug=False):
         exit(9)
 
     try:
-        additional_metadata = {'application_container_id': settings['container_id']}
-        ac_upload(result_files, local_result_files, additional_metadata)
+        ac_upload(result_files, local_result_files, meta_data)
     except:
         description = 'Could not send result files.'
         callback_handler.send_callback(
