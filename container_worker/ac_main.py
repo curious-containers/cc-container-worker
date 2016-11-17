@@ -1,8 +1,6 @@
 import os
 import json
 import toml
-import posix
-import signal
 from subprocess import Popen, PIPE
 from traceback import format_exc
 from threading import Thread
