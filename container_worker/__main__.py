@@ -1,7 +1,7 @@
 import sys
 import json
 
-from container_worker import ac_main, dc_main
+from container_worker import ac_main, dc_main, ic_main
 
 debug = False
 settings_index = 1
@@ -16,6 +16,6 @@ if settings['container_type'] == 'data':
 elif settings['container_type'] == 'application':
     ac_main.main(settings, debug)
 elif settings['container_type'] == 'inspection':
-    print('inspection')
+    ic_main.main(settings)
 else:
     exit(42)
