@@ -43,13 +43,6 @@ def main(settings, debug=False):
         )
         exit(3)
 
-    meta_data = {
-        'application_container_id': settings['container_id'],
-        'task_id': settings['task_id']
-    }
-
-    result_files = settings['result_files']
-
     for key, val in local_result_files.items():
         try:
             if not os.path.exists(val['dir']):
@@ -58,9 +51,15 @@ def main(settings, debug=False):
             pass
 
     description = 'Container started.'
-    response = callback_handler.send_callback(callback_type='started', state='success', description=description)
+    additional_settings = callback_handler.send_callback(callback_type='started', state='success', description=description)
 
-    input_files = response['input_files']
+    meta_data = {
+        'application_container_id': settings['container_id'],
+        'task_id': additional_settings['task_id']
+    }
+
+    input_files = additional_settings['input_files']
+    result_files = additional_settings['result_files']
 
     if len(input_files) != len(local_input_files):
         description = 'Number of local_input_files in config does not match input_files.'
@@ -81,15 +80,18 @@ def main(settings, debug=False):
 
     telemetry_data = None
     try:
-        if settings.get('parameters'):
-            if isinstance(settings['parameters'], dict):
-                application_command = '{} \'{}\''.format(application_command, json.dumps(settings['parameters']))
-            elif isinstance(settings['parameters'], list):
-                application_command += ''.join([' {}'.format(val) for val in settings['parameters']])
+        if additional_settings.get('parameters'):
+            if isinstance(additional_settings['parameters'], dict):
+                application_command = '{} \'{}\''.format(
+                    application_command,
+                    json.dumps(additional_settings['parameters'])
+                )
+            elif isinstance(additional_settings['parameters'], list):
+                application_command += ''.join([' {}'.format(val) for val in additional_settings['parameters']])
             else:
-                raise Exception('Type of parameters not valid: {}'.format(type(settings['parameters'])))
+                raise Exception('Type of parameters not valid: {}'.format(type(additional_settings['parameters'])))
 
-        sandbox = Sandbox(config=settings.get('sandbox'))
+        sandbox = Sandbox(config=additional_settings.get('sandbox'))
 
         if not os.path.exists(LOCAL_TRACING_FILE['dir']):
             os.makedirs(LOCAL_TRACING_FILE['dir'])
@@ -99,7 +101,7 @@ def main(settings, debug=False):
         print(application_command)
         sp = Popen(application_command, stdout=PIPE, stderr=PIPE, shell=True, preexec_fn=sandbox.enter)
 
-        tracing = Tracing(sp.pid, config=settings.get('tracing'), outfile=local_tracing_file_path)
+        tracing = Tracing(sp.pid, config=additional_settings.get('tracing'), outfile=local_tracing_file_path)
         tracing.start()
 
         telemetry = Telemetry(sp, config=config)
@@ -132,8 +134,8 @@ def main(settings, debug=False):
         state = 'failed'
 
     try:
-        if settings.get('tracing'):
-            tracing_file = settings['tracing'].get('tracing_file')
+        if additional_settings.get('tracing'):
+            tracing_file = additional_settings['tracing'].get('tracing_file')
             tracing_upload(tracing_file, LOCAL_TRACING_FILE, meta_data)
     except:
         if return_code != 0:
