@@ -42,10 +42,12 @@ class Telemetry:
             sleep(self.telemetry_interval_seconds)
 
     def _input_file_sizes(self):
-        return _file_sizes(self.config['main']['local_input_files'])
+        vals = self.config['local_input_files']
+        return _file_sizes(vals)
 
     def _result_file_sizes(self):
-        return _file_sizes(self.config['main']['local_result_files'])
+        vals = [val for _, val in self.config['local_result_files'].items()]
+        return _file_sizes(vals)
 
     def result(self):
         with self.lock:

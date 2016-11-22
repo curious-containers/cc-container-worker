@@ -1,17 +1,16 @@
 import os
 import json
-import toml
 from subprocess import Popen, PIPE
 from traceback import format_exc
 from threading import Thread
 
-from container_worker.data import ac_download, ac_upload
+from container_worker.data import ac_download, ac_upload, tracing_upload
 from container_worker.ac_telemetry import Telemetry
 from container_worker.ac_tracing import Tracing
 from container_worker.ac_sandbox import Sandbox
 from container_worker.callbacks import CallbackHandler, DebugCallbackHandler
 
-CONFIG_FILE_PATH = '/opt/config.toml'
+CONFIG_FILE_PATH = '/opt/config.json'
 
 LOCAL_TRACING_FILE = {
     'dir': '/var/tmp/cc-tracing',
@@ -28,17 +27,17 @@ def main(settings, debug=False):
 
     try:
         with open(CONFIG_FILE_PATH) as f:
-            config = toml.load(f)
+            config = json.load(f)
             if debug:
                 callback_handler.config = config
-        local_result_files = config['main']['local_result_files']
-        local_input_files = config['main']['local_input_files']
-        application_command = config['main']['application_command']
-        assert type(local_result_files) is list
+        local_result_files = config['local_result_files']
+        local_input_files = config['local_input_files']
+        application_command = config['application_command']
+        assert type(local_result_files) is dict
         assert type(local_input_files) is list
         assert type(application_command) is str
     except:
-        description = 'Could not load TOML config file from path {}'.format(CONFIG_FILE_PATH)
+        description = 'Could not load JSON config file from path {}'.format(CONFIG_FILE_PATH)
         callback_handler.send_callback(
             callback_type='started', state='failed', description=description, exception=format_exc()
         )
@@ -51,17 +50,10 @@ def main(settings, debug=False):
 
     result_files = settings['result_files']
 
-    if len(result_files) != len(local_result_files):
-        description = 'Number of local_result_files in config does not match result_files.'
-        callback_handler.send_callback(
-            callback_type='started', state='failed', description=description
-        )
-        exit(4)
-
-    for local_result_file in local_result_files:
+    for key, val in local_result_files.items():
         try:
-            if not os.path.exists(local_result_file['dir']):
-                os.makedirs(local_result_file['dir'])
+            if not os.path.exists(val['dir']):
+                os.makedirs(val['dir'])
         except:
             pass
 
@@ -142,7 +134,7 @@ def main(settings, debug=False):
     try:
         if settings.get('tracing'):
             tracing_file = settings['tracing'].get('tracing_file')
-            ac_upload([tracing_file], [LOCAL_TRACING_FILE], meta_data)
+            tracing_upload(tracing_file, LOCAL_TRACING_FILE, meta_data)
     except:
         if return_code != 0:
             description = 'Processing failed and tracing file upload failed.'
