@@ -136,7 +136,8 @@ def main(settings, debug=False):
     try:
         if additional_settings.get('tracing'):
             tracing_file = additional_settings['tracing'].get('tracing_file')
-            tracing_upload(tracing_file, LOCAL_TRACING_FILE, meta_data)
+            if tracing_file:
+                tracing_upload(tracing_file, LOCAL_TRACING_FILE, meta_data)
     except:
         if return_code != 0:
             description = 'Processing failed and tracing file upload failed.'
