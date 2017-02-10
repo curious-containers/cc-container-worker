@@ -10,9 +10,9 @@ def main(settings):
     callback_handler = CallbackHandler(settings)
 
     description = 'Container started.'
-    callback_handler.send_callback(callback_type='started', state='success', description=description)
+    additional_settings = callback_handler.send_callback(callback_type='started', state='success', description=description)
 
-    if len(settings['input_files']) != len(settings['input_file_keys']):
+    if len(additional_settings['input_files']) != len(additional_settings['input_file_keys']):
         description = 'Number of input_file_keys does not match number of input_files.'
         callback_handler.send_callback(
             callback_type='files_retrieved', state='failed', description=description
@@ -20,7 +20,7 @@ def main(settings):
         exit(2)
 
     try:
-        file_manager = DCFileManager(settings['input_files'], settings['input_file_keys'])
+        file_manager = DCFileManager(additional_settings['input_files'], additional_settings['input_file_keys'])
     except:
         description = 'Could not retrieve input files.'
         callback_handler.send_callback(
