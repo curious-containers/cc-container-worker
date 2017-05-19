@@ -1,5 +1,4 @@
 import requests
-import json
 
 
 STATES = [
@@ -84,37 +83,3 @@ class CallbackHandler:
             return r.json()
         except:
             pass
-
-
-class DebugCallbackHandler:
-    def __init__(self, settings):
-        self.callback = callback_prototype()
-        self.callback['callback_key'] = settings['callback_key']
-        self.callback['container_id'] = settings['container_id']
-
-        self.callback_url = settings['callback_url']
-        self.callback_type_list = DC_CALLBACK_TYPES if settings['container_type'] == 'data' else AC_CALLBACK_TYPES
-        self.config = None
-
-    def send_callback(self, callback_type, state, description, exception=None, telemetry=None):
-
-        self.callback['callback_type'] = callback_type_to_index(
-            callback_type,
-            self.callback_type_list
-        )
-
-        self.callback['content']['state'] = state_to_index(state)
-        self.callback['content']['description'] = description
-        self.callback['content']['exception'] = exception
-        self.callback['content']['telemetry'] = telemetry
-
-        print("Would send callback to {} with data {}".format(self.callback_url, self.callback))
-        result = {}
-        if callback_type == 'started' and state == 'success':
-            # Emulate input file retrieval
-            if len(self.config['main']['local_result_files']) > 0:
-                result['input_files'] = json.loads(input("Paste JSON input file task config here: "))
-            else:
-                result['input_files'] = []
-
-        return result

@@ -8,7 +8,7 @@ from container_worker.data import ac_download, ac_upload, tracing_upload
 from container_worker.ac_telemetry import Telemetry
 from container_worker.ac_tracing import Tracing
 from container_worker.ac_sandbox import Sandbox
-from container_worker.callbacks import CallbackHandler, DebugCallbackHandler
+from container_worker.callbacks import CallbackHandler
 
 CONFIG_FILE_PATH = '/opt/config.json'
 
@@ -19,17 +19,12 @@ LOCAL_TRACING_FILE = {
 }
 
 
-def main(settings, debug=False):
-    if debug:
-        callback_handler = DebugCallbackHandler(settings)
-    else:
-        callback_handler = CallbackHandler(settings)
+def main(settings):
+    callback_handler = CallbackHandler(settings)
 
     try:
         with open(CONFIG_FILE_PATH) as f:
             config = json.load(f)
-            if debug:
-                callback_handler.config = config
         local_result_files = config['local_result_files']
         local_input_files = config['local_input_files']
         application_command = config['application_command']
