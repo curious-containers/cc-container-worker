@@ -1,8 +1,6 @@
-from threading import Lock
 import signal
 import posix
 from process_tracing.tracing import Tracing as T
-from process_tracing.recording import FileAccessRecord, SyscallRecord
 from process_tracing.constants import TRACING_RECORD_MODE_FILE
 
 

@@ -6,8 +6,6 @@ from threading import Thread
 
 from container_worker.data import ac_download, ac_upload, tracing_upload
 from container_worker.ac_telemetry import Telemetry
-from container_worker.ac_tracing import Tracing
-from container_worker.ac_sandbox import Sandbox
 from container_worker.callbacks import CallbackHandler, DebugCallbackHandler
 
 CONFIG_FILE_PATH = '/opt/config.json'
@@ -91,18 +89,23 @@ def main(settings, debug=False):
             else:
                 raise Exception('Type of parameters not valid: {}'.format(type(additional_settings['parameters'])))
 
-        sandbox = Sandbox(config=additional_settings.get('sandbox'))
+        preexec_fn = None
 
-        if not os.path.exists(LOCAL_TRACING_FILE['dir']):
-            os.makedirs(LOCAL_TRACING_FILE['dir'])
+        if additional_settings.get('sandbox'):
+            from container_worker.ac_sandbox import Sandbox
+            sandbox = Sandbox(config=additional_settings.get('sandbox'))
+            preexec_fn = sandbox.enter
 
-        local_tracing_file_path = os.path.join(LOCAL_TRACING_FILE['dir'], LOCAL_TRACING_FILE['name'])
-
-        print(application_command)
-        sp = Popen(application_command, stdout=PIPE, stderr=PIPE, shell=True, preexec_fn=sandbox.enter)
-
-        tracing = Tracing(sp.pid, config=additional_settings.get('tracing'), outfile=local_tracing_file_path)
-        tracing.start()
+        if additional_settings.get('tracing'):
+            from container_worker.ac_tracing import Tracing
+            if not os.path.exists(LOCAL_TRACING_FILE['dir']):
+                os.makedirs(LOCAL_TRACING_FILE['dir'])
+            local_tracing_file_path = os.path.join(LOCAL_TRACING_FILE['dir'], LOCAL_TRACING_FILE['name'])
+            sp = Popen(application_command, stdout=PIPE, stderr=PIPE, shell=True, preexec_fn=preexec_fn)
+            tracing = Tracing(sp.pid, config=additional_settings.get('tracing'), outfile=local_tracing_file_path)
+            tracing.start()
+        else:
+            sp = Popen(application_command, stdout=PIPE, stderr=PIPE, shell=True, preexec_fn=preexec_fn)
 
         telemetry = Telemetry(sp, config=config)
         t = Thread(target=telemetry.monitor)
