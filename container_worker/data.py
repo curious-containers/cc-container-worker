@@ -6,6 +6,7 @@ from inspect import getmembers, isfunction
 from container_worker import downloaders, custom_downloaders, uploaders, custom_uploaders
 
 FILE_DIR = os.path.expanduser('~')
+FILES_INFO_PATH = os.path.expanduser('~/files.json')
 
 
 def _get_functions(modules):
@@ -17,21 +18,19 @@ def _get_functions(modules):
     return funcs
 
 
-class DCFileManager:
-    def __init__(self, input_files, input_file_keys):
-        connectors = _get_functions([downloaders, custom_downloaders])
-        self._files = {}
-        for input_file, input_file_key in zip(input_files, input_file_keys):
-            local_input_file = {'dir': FILE_DIR, 'name': str(uuid4())}
-            self._files[input_file_key] = {
-                'input_file': input_file,
-                'local_input_file': local_input_file
-            }
-            connector = connectors[input_file['connector_type']]
-            connector(input_file['connector_access'], local_input_file)
-
-    def get_file(self, input_file_key):
-        return self._files[input_file_key]
+def dc_download(input_files, input_file_keys):
+    connectors = _get_functions([downloaders, custom_downloaders])
+    files = {}
+    for input_file, input_file_key in zip(input_files, input_file_keys):
+        local_input_file = {'dir': FILE_DIR, 'name': str(uuid4())}
+        files[input_file_key] = {
+            'input_file': input_file,
+            'local_input_file': local_input_file
+        }
+        connector = connectors[input_file['connector_type']]
+        connector(input_file['connector_access'], local_input_file)
+    with open(FILES_INFO_PATH, 'w') as f:
+        json.dump(files, f)
 
 
 def ac_download(input_files, local_input_files):
