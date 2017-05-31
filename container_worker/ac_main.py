@@ -97,17 +97,25 @@ def main(settings):
                 os.makedirs(LOCAL_TRACING_FILE['dir'])
             local_tracing_file_path = os.path.join(LOCAL_TRACING_FILE['dir'], LOCAL_TRACING_FILE['name'])
             sp = Popen(application_command, stdout=PIPE, stderr=PIPE, shell=True, preexec_fn=preexec_fn)
+
             tracing = Tracing(sp.pid, config=additional_settings.get('tracing'), outfile=local_tracing_file_path)
             tracing.start()
+
+            telemetry = Telemetry(sp, config=config)
+            t = Thread(target=telemetry.monitor)
+            t.start()
+
+            std_out, std_err = sp.communicate()
+            tracing.finish()
         else:
             sp = Popen(application_command, stdout=PIPE, stderr=PIPE, shell=True, preexec_fn=preexec_fn)
 
-        telemetry = Telemetry(sp, config=config)
-        t = Thread(target=telemetry.monitor)
-        t.start()
+            telemetry = Telemetry(sp, config=config)
+            t = Thread(target=telemetry.monitor)
+            t.start()
 
-        std_out, std_err = sp.communicate()
-        tracing.finish()
+            std_out, std_err = sp.communicate()
+
         return_code = sp.returncode
 
         # Collect telemetry data
