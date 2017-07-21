@@ -26,7 +26,9 @@ def main(settings):
     callback_handler = CallbackHandler(settings)
 
     description = 'Container started.'
-    additional_settings = callback_handler.send_callback(callback_type='started', state='success', description=description)
+    additional_settings = callback_handler.send_callback(
+        callback_type='started', state='success', description=description
+    )
 
     if len(additional_settings['input_files']) != len(additional_settings['input_file_keys']):
         description = 'Number of input_file_keys does not match number of input_files.'
@@ -47,9 +49,14 @@ def main(settings):
     description = 'Input files available.'
     callback_handler.send_callback(callback_type='files_retrieved', state='success', description=description)
 
+    num_workers = additional_settings.get('num_workers')
+    if not num_workers:
+        num_workers = cpu_count()
+
     options = {
         'bind': '0.0.0.0:80',
-        'workers': cpu_count()
+        'workers': num_workers,
+        'worker_class': 'gevent'
     }
 
     WebApp(options).run()
