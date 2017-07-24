@@ -1,10 +1,10 @@
 import json
+
 from flask import Flask, send_from_directory
 
-from container_worker.data import FILES_INFO_PATH
+from cc_container_worker.commons.data import FILES_INFO_PATH
 
-
-application = Flask('sftp-data-container')
+application = Flask('data-container')
 
 
 with open(FILES_INFO_PATH) as f:

@@ -1,10 +1,12 @@
-from gunicorn.app.base import BaseApplication
-from gunicorn import util
-from traceback import format_exc
+import sys
+import json
 from multiprocessing import cpu_count
+from traceback import format_exc
+from gunicorn import util
+from gunicorn.app.base import BaseApplication
 
-from container_worker.callbacks import CallbackHandler
-from container_worker.data import dc_download
+from cc_container_worker.commons.callbacks import CallbackHandler
+from cc_container_worker.commons.data import dc_download
 
 
 class WebApp(BaseApplication):
@@ -19,10 +21,11 @@ class WebApp(BaseApplication):
             self.cfg.set(key.lower(), value)
 
     def load(self):
-        return util.import_app("container_worker.dc_web")
+        return util.import_app("cc_container_worker.data_container.wsgi")
 
 
-def main(settings):
+def main():
+    settings = json.loads(sys.argv[1])
     callback_handler = CallbackHandler(settings)
 
     description = 'Container started.'
@@ -60,3 +63,7 @@ def main(settings):
     }
 
     WebApp(options).run()
+
+
+if __name__ == '__main__':
+    main()

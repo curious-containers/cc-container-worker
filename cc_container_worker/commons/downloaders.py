@@ -1,8 +1,9 @@
 import os
+
 import requests
 from paramiko import SSHClient, AutoAddPolicy
 
-from container_worker import helper
+from cc_container_worker.commons import helper
 
 
 def http(connector_access, local_input_file):

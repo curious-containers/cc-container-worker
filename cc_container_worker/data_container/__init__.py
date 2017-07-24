@@ -1,0 +1,1 @@
+from cc_container_worker.data_container.__main__ import main

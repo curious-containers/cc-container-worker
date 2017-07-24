@@ -1,14 +1,17 @@
 import os
+import sys
 import json
+import jsonschema
 from subprocess import Popen, PIPE
-from traceback import format_exc
 from threading import Thread
+from traceback import format_exc
 
-from container_worker.data import ac_download, ac_upload, tracing_upload
-from container_worker.ac_telemetry import Telemetry
-from container_worker.callbacks import CallbackHandler
+from cc_container_worker.application_container.telemetry import Telemetry
+from cc_container_worker.commons.data import ac_download, ac_upload, tracing_upload
+from cc_container_worker.commons.callbacks import CallbackHandler
+from cc_container_worker.commons.schemas import application_config_schema
 
-CONFIG_FILE_PATH = '/opt/config.json'
+CONFIG_FILE_PATH = os.path.join(os.path.expanduser('~'), '.config', 'cc-container-worker', 'config.json')
 
 LOCAL_TRACING_FILE = {
     'dir': '/var/tmp/cc-tracing',
@@ -17,18 +20,15 @@ LOCAL_TRACING_FILE = {
 }
 
 
-def main(settings):
+def main():
+    settings = json.loads(sys.argv[1])
     callback_handler = CallbackHandler(settings)
 
+    config = None
     try:
         with open(CONFIG_FILE_PATH) as f:
             config = json.load(f)
-        local_result_files = config['local_result_files']
-        local_input_files = config['local_input_files']
-        application_command = config['application_command']
-        assert type(local_result_files) is dict
-        assert type(local_input_files) is list
-        assert type(application_command) is str
+        jsonschema.validate(config, application_config_schema)
     except:
         description = 'Could not load JSON config file from path {}'.format(CONFIG_FILE_PATH)
         callback_handler.send_callback(
@@ -36,7 +36,7 @@ def main(settings):
         )
         exit(3)
 
-    for key, val in local_result_files.items():
+    for key, val in config['local_result_files'].items():
         try:
             if not os.path.exists(val['dir']):
                 os.makedirs(val['dir'])
@@ -44,7 +44,9 @@ def main(settings):
             pass
 
     description = 'Container started.'
-    additional_settings = callback_handler.send_callback(callback_type='started', state='success', description=description)
+    additional_settings = callback_handler.send_callback(
+        callback_type='started', state='success', description=description
+    )
 
     meta_data = {
         'application_container_id': settings['container_id'],
@@ -54,13 +56,13 @@ def main(settings):
     input_files = additional_settings['input_files']
     result_files = additional_settings['result_files']
 
-    if len(input_files) != len(local_input_files):
+    if len(input_files) != len(config['local_input_files']):
         description = 'Number of local_input_files in config does not match input_files.'
         callback_handler.send_callback(callback_type='files_retrieved', state='failed', description=description)
         exit(5)
 
     try:
-        ac_download(input_files, local_input_files)
+        ac_download(input_files, config['local_input_files'])
     except:
         description = 'Could not retrieve input files.'
         callback_handler.send_callback(
@@ -72,6 +74,7 @@ def main(settings):
     callback_handler.send_callback(callback_type='files_retrieved', state='success', description=description)
 
     telemetry_data = None
+    application_command = config['application_command']
     try:
         if additional_settings.get('parameters'):
             if isinstance(additional_settings['parameters'], dict):
@@ -87,12 +90,12 @@ def main(settings):
         preexec_fn = None
 
         if additional_settings.get('sandbox'):
-            from container_worker.ac_sandbox import Sandbox
+            from cc_container_worker.application_container.sandbox import Sandbox
             sandbox = Sandbox(config=additional_settings.get('sandbox'))
             preexec_fn = sandbox.enter
 
         if additional_settings.get('tracing'):
-            from container_worker.ac_tracing import Tracing
+            from cc_container_worker.application_container.tracing import Tracing
             if not os.path.exists(LOCAL_TRACING_FILE['dir']):
                 os.makedirs(LOCAL_TRACING_FILE['dir'])
             local_tracing_file_path = os.path.join(LOCAL_TRACING_FILE['dir'], LOCAL_TRACING_FILE['name'])
@@ -164,7 +167,7 @@ def main(settings):
         exit(9)
 
     try:
-        ac_upload(result_files, local_result_files, meta_data)
+        ac_upload(result_files, config['local_result_files'], meta_data)
     except:
         description = 'Could not send result files.'
         callback_handler.send_callback(
@@ -175,3 +178,7 @@ def main(settings):
     callback_handler.send_callback(
         callback_type='results_sent', state='success', description='Result files sent.'
     )
+
+
+if __name__ == '__main__':
+    main()
