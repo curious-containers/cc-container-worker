@@ -52,13 +52,13 @@ def callback_prototype():
 
 
 class CallbackHandler:
-    def __init__(self, settings):
+    def __init__(self, settings, container_type):
         self.callback = callback_prototype()
         self.callback['callback_key'] = settings['callback_key']
         self.callback['container_id'] = settings['container_id']
 
         self.callback_url = settings['callback_url']
-        self.callback_type_list = DC_CALLBACK_TYPES if settings['container_type'] == 'data' else AC_CALLBACK_TYPES
+        self.callback_type_list = DC_CALLBACK_TYPES if container_type == 'data' else AC_CALLBACK_TYPES
 
     def send_callback(self, callback_type, state, description, exception=None, telemetry=None):
 

@@ -22,7 +22,7 @@ LOCAL_TRACING_FILE = {
 
 def main():
     settings = json.loads(sys.argv[1])
-    callback_handler = CallbackHandler(settings)
+    callback_handler = CallbackHandler(settings, container_type='application')
 
     config = None
     try:

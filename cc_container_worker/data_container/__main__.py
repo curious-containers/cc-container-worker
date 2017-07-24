@@ -26,7 +26,7 @@ class WebApp(BaseApplication):
 
 def main():
     settings = json.loads(sys.argv[1])
-    callback_handler = CallbackHandler(settings)
+    callback_handler = CallbackHandler(settings, container_type='data')
 
     description = 'Container started.'
     additional_settings = callback_handler.send_callback(
