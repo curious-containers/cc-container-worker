@@ -9,13 +9,13 @@ from cc_container_worker.commons import uploaders
 try:
     import cc_custom_downloaders
     downloader_modules = [downloaders, cc_custom_downloaders]
-except:
+except ImportError:
     downloader_modules = [downloaders]
 
 try:
     import cc_custom_uploaders
     uploader_modules = [uploaders, cc_custom_uploaders]
-except:
+except ImportError:
     uploader_modules = [uploaders]
 
 
