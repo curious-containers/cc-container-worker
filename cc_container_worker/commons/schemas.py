@@ -3,7 +3,7 @@ application_config_schema = {
     'properties': {
         'application_command': {'type': 'string'},
         'local_input_files': {
-            'type': 'list',
+            'type': 'array',
             'items': {'type': 'object'}
         },
         'local_result_files': {
