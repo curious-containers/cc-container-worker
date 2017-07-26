@@ -1,1 +1,0 @@
-from cc_container_worker.application_container.__main__ import main

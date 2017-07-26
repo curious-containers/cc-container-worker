@@ -27,9 +27,9 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'cc-application-container=cc_container_worker.application_container:main',
-            'cc-data-container=cc_container_worker.data_container:main',
-            'cc-inspection-container=cc_container_worker.inspection_container:main'
+            'cc-application-container=cc_container_worker.application_container.__main__:main',
+            'cc-data-container=cc_container_worker.data_container.__main__:main',
+            'cc-inspection-container=cc_container_worker.inspection_container.__main__:main'
         ]
     },
     license='Apache-2.0',

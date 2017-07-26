@@ -1,3 +1,4 @@
 .idea
 __pycache__
 *.pyc
+cc_container_worker.egg-info
