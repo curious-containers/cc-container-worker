@@ -1,3 +1,6 @@
 # CC-Container-Worker
 
-This software is part of the Curious Containers project. Visit the [project website](http://www.curious-containers.cc/) or [read the documentation](http://www.curious-containers.cc/docs/html/index.html). 
+This repository has been **deprecated** in favor of new software components.                                                                                  
+
+For more information please refer to the Curious Containers [documentation](https://curious-containers.github.io/).
+
